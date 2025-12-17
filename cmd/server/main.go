@@ -9,10 +9,10 @@ import (
 )
 
 type URLMetric struct {
-	Verb, Type, Name, Value string
+	Type, Name, Value string
 }
 
-func passStorage(storage *MemStorage) http.HandlerFunc {
+func serveMetrics(storage *MemStorage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		log.Println("   **********************   ")
 		log.Println("")
@@ -34,7 +34,7 @@ func passStorage(storage *MemStorage) http.HandlerFunc {
 		//}
 
 		if len(splitURL) < 4 {
-			http.Error(res, "not enough URL params to write metric, expected 4", http.StatusBadRequest)
+			http.Error(res, "not enough URL params to write metric, expected 4", http.StatusNotFound)
 			return
 		}
 		if splitURL[0] != "update" {
@@ -46,7 +46,7 @@ func passStorage(storage *MemStorage) http.HandlerFunc {
 			return
 		}
 
-		metric := URLMetric{Verb: splitURL[0], Type: splitURL[1], Name: splitURL[2], Value: splitURL[3]}
+		metric := URLMetric{Type: splitURL[1], Name: splitURL[2], Value: splitURL[3]}
 
 		switch metric.Type {
 		case "gauge":
@@ -64,7 +64,7 @@ func passStorage(storage *MemStorage) http.HandlerFunc {
 			}
 			storage.AddCounter(metric.Name, int64(val))
 		default:
-			http.Error(res, "unknown metric type, expected 'gauge' or 'counter'", http.StatusNotFound)
+			http.Error(res, "unknown metric type, expected 'gauge' or 'counter'", http.StatusBadRequest)
 			return
 		}
 
@@ -79,7 +79,7 @@ func run() error {
 
 	storage := MemStorage{Gauge: make(map[string]float64), Counter: make(map[string]int64)}
 
-	mux.HandleFunc("/", passStorage(&storage))
+	mux.HandleFunc("/", serveMetrics(&storage))
 
 	return http.ListenAndServe("0.0.0.0:8080", mux)
 
