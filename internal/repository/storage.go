@@ -1,4 +1,4 @@
-package main
+package repository
 
 type StorageInterface interface {
 	AddGauge(name string, val float64)
@@ -6,7 +6,6 @@ type StorageInterface interface {
 }
 
 type MemStorage struct {
-	StorageInterface
 	Gauge   map[string]float64
 	Counter map[string]int64
 }
@@ -17,4 +16,8 @@ func (s *MemStorage) AddGauge(name string, val float64) {
 
 func (s *MemStorage) AddCounter(name string, val int64) {
 	s.Counter[name] += val
+}
+
+func NewStorage() *MemStorage {
+	return &MemStorage{Gauge: make(map[string]float64), Counter: make(map[string]int64)}
 }

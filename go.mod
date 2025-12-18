@@ -1,3 +1,3 @@
-module github.com/isBlueTip/metrics
+module github.com/xxx/metrics
 
 go 1.24
