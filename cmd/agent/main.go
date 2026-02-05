@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
@@ -13,7 +15,16 @@ const reportInterval time.Duration = 10 * time.Second
 
 func run() error {
 	metric := &agent.MetricSet{PollCount: 0}
-	sender := &agent.Sender{HC: http.Client{}}
+	dialer := net.Dialer{}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		return dialer.DialContext(ctx, "tcp4", addr)
+	}
+	sender := &agent.Sender{
+		HC: http.Client{
+			Transport: transport,
+		},
+	}
 	start := time.Now()
 
 	for {

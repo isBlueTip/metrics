@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/xxx/metrics/internal/repository"
+	"github.com/isbluetip/metrics/internal/repository"
 )
 
 func TestUpdateMetric(t *testing.T) {

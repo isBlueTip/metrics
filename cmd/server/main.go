@@ -4,15 +4,14 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/xxx/metrics/internal/repository"
+	"github.com/isbluetip/metrics/internal/repository"
 	"github.com/xxx/metrics/internal/server"
 )
 
 func run() error {
 	mux := server.Router(repository.NewStorage())
 
-	//return http.ListenAndServe("0.0.0.0:8080", mux)
-	return http.ListenAndServe("localhost:8080", mux)
+	return http.ListenAndServe("127.0.0.1:8080", mux)
 
 }
 

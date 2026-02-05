@@ -126,9 +126,6 @@ func Test_executeRequest(t *testing.T) {
 				},
 				hc: http.Client{},
 			},
-			//want: &http.Response{
-			//	StatusCode: http.StatusNotFound,
-			//},
 			wantErr: false,
 		},
 		{
@@ -141,9 +138,6 @@ func Test_executeRequest(t *testing.T) {
 				},
 				hc: http.Client{},
 			},
-			//want: &http.Response{
-			//	StatusCode: http.StatusBadRequest,
-			//},
 			wantErr: false,
 		},
 	}
@@ -152,19 +146,6 @@ func Test_executeRequest(t *testing.T) {
 			if _, err := executeRequest(tt.args.u, tt.args.hc); (err != nil) != tt.wantErr {
 				t.Errorf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
 			}
-			//got, err := executeRequest(tt.args.u, tt.args.hc)
-			//if (err != nil) != tt.wantErr {
-			//	t.Fatalf("executeRequest() error = %v, wantErr %v", err, tt.wantErr)
-			//}
-			//if tt.wantErr {
-			//	return
-			//}
-			////if !reflect.DeepEqual(got, tt.want) {
-			////	t.Errorf("executeRequest() = %+v, want %+v", got, tt.want)
-			////}
-			//if got.StatusCode != tt.want.StatusCode {
-			//	t.Errorf("resp.StatusCode = %d, want %d", got.StatusCode, tt.want.StatusCode)
-			//}
 		})
 	}
 }

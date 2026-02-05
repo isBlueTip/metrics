@@ -1,8 +1,8 @@
 package server
 
 import (
+	"github.com/isbluetip/metrics/internal/repository"
 	"github.com/xxx/metrics/internal/handlers"
-	"github.com/xxx/metrics/internal/repository"
 	"net/http"
 )
 

@@ -9,7 +9,7 @@ import (
 	"github.com/xxx/metrics/internal/models"
 )
 
-const serverAddr string = "localhost:8080"
+const serverAddr string = "127.0.0.1:8080"
 
 type Sender struct {
 	HC http.Client
@@ -27,6 +27,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "BuckHashSys", strconv.FormatUint(metricSet.BuckHashSys, 10))
@@ -36,6 +37,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "Frees", strconv.FormatUint(metricSet.Frees, 10))
@@ -45,6 +47,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "GCCPUFraction", strconv.FormatFloat(metricSet.GCCPUFraction, 'f', 4, 64))
@@ -54,6 +57,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "GCSys", strconv.FormatFloat(metricSet.GCSys, 'f', 4, 64))
@@ -63,6 +67,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "HeapAlloc", strconv.FormatUint(metricSet.HeapAlloc, 10))
@@ -72,6 +77,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "HeapIdle", strconv.FormatUint(metricSet.HeapIdle, 10))
@@ -81,6 +87,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "HeapInuse", strconv.FormatUint(metricSet.HeapInuse, 10))
@@ -90,6 +97,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	u = generateURL(models.Gauge, "HeapObjects", strconv.FormatUint(metricSet.HeapObjects, 10))
@@ -99,6 +107,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		return err
 	} else {
 		log.Printf("status: %s\n", resp.Status)
+		resp.Body.Close()
 	}
 
 	log.Printf("metric sent\n")

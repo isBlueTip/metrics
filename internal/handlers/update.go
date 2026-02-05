@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/isbluetip/metrics/internal/repository"
 	"github.com/xxx/metrics/internal/models"
-	"github.com/xxx/metrics/internal/repository"
 	"github.com/xxx/metrics/internal/service"
 )
 
