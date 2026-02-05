@@ -11,7 +11,8 @@ import (
 func run() error {
 	mux := server.Router(repository.NewStorage())
 
-	return http.ListenAndServe("0.0.0.0:8080", mux)
+	//return http.ListenAndServe("0.0.0.0:8080", mux)
+	return http.ListenAndServe("localhost:8080", mux)
 
 }
 

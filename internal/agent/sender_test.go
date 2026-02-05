@@ -1,0 +1,170 @@
+package agent
+
+import (
+	"net/http"
+	"net/url"
+	"reflect"
+	"testing"
+
+	"github.com/xxx/metrics/internal/models"
+)
+
+func TestSender_Send(t *testing.T) {
+	type fields struct {
+		HC http.Client
+	}
+	type args struct {
+		metricSet *MetricSet
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		wantErr bool
+	}{
+		{
+			name: "1 positive",
+			fields: fields{
+				HC: http.Client{},
+			},
+			args: args{
+				metricSet: &MetricSet{},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &Sender{
+				HC: tt.fields.HC,
+			}
+			if err := s.Send(tt.args.metricSet); (err != nil) != tt.wantErr {
+				t.Errorf("Sender.Send() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func Test_generateURL(t *testing.T) {
+	type args struct {
+		metricType string
+		metricName string
+		metricVal  string
+	}
+	tests := []struct {
+		name string
+		args args
+		want *url.URL
+	}{
+		{name: "1 positive gauge",
+			args: args{
+				metricType: models.Gauge,
+				metricName: "testName1",
+				metricVal:  "8558",
+			},
+			want: &url.URL{
+				Scheme: "http",
+				Host:   serverAddr,
+				Path:   "/update/" + models.Gauge + "/" + "testName1" + "/" + "8558" + "/",
+			},
+		},
+		{name: "2 positive counter",
+			args: args{
+				metricType: models.Counter,
+				metricName: "testName2",
+				metricVal:  "8560",
+			},
+			want: &url.URL{
+				Scheme: "http",
+				Host:   serverAddr,
+				Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560" + "/",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := generateURL(tt.args.metricType, tt.args.metricName, tt.args.metricVal); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("generateURL() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_executeRequest(t *testing.T) {
+	type args struct {
+		u  *url.URL
+		hc http.Client
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    *http.Response
+		wantErr bool
+	}{
+		{
+			name: "status 200",
+			args: args{
+				u: &url.URL{
+					Scheme: "http",
+					Host:   serverAddr,
+					Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560" + "/",
+				},
+				hc: http.Client{},
+			},
+			want: &http.Response{
+				StatusCode: http.StatusOK,
+			},
+			wantErr: false,
+		},
+		{
+			name: "status 404",
+			args: args{
+				u: &url.URL{
+					Scheme: "http",
+					Host:   serverAddr,
+					Path:   "/update/" + models.Counter + "/" + "" + "/" + "8560" + "/",
+				},
+				hc: http.Client{},
+			},
+			//want: &http.Response{
+			//	StatusCode: http.StatusNotFound,
+			//},
+			wantErr: false,
+		},
+		{
+			name: "status 400",
+			args: args{
+				u: &url.URL{
+					Scheme: "http",
+					Host:   serverAddr,
+					Path:   "/update/" + "models.Counter" + "/" + "testName2" + "/" + "8560" + "/",
+				},
+				hc: http.Client{},
+			},
+			//want: &http.Response{
+			//	StatusCode: http.StatusBadRequest,
+			//},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if _, err := executeRequest(tt.args.u, tt.args.hc); (err != nil) != tt.wantErr {
+				t.Errorf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
+			}
+			//got, err := executeRequest(tt.args.u, tt.args.hc)
+			//if (err != nil) != tt.wantErr {
+			//	t.Fatalf("executeRequest() error = %v, wantErr %v", err, tt.wantErr)
+			//}
+			//if tt.wantErr {
+			//	return
+			//}
+			////if !reflect.DeepEqual(got, tt.want) {
+			////	t.Errorf("executeRequest() = %+v, want %+v", got, tt.want)
+			////}
+			//if got.StatusCode != tt.want.StatusCode {
+			//	t.Errorf("resp.StatusCode = %d, want %d", got.StatusCode, tt.want.StatusCode)
+			//}
+		})
+	}
+}

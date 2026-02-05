@@ -76,5 +76,5 @@ func (m *MetricSet) Collect() {
 	m.PollCount += 1
 	m.RandomValue = x.Int63()
 
-	log.Printf("metricSet collected: %v+\n", m)
+	log.Printf("metricSet collected: %+v\n", *m)
 }
