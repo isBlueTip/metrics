@@ -1,15 +1,16 @@
-package handler
+package handlers
 
 import (
 	"errors"
 	"fmt"
-	"github.com/xxx/metrics/internal/models"
-	"github.com/xxx/metrics/internal/repository"
-	"github.com/xxx/metrics/internal/service"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/xxx/metrics/internal/models"
+	"github.com/xxx/metrics/internal/repository"
+	"github.com/xxx/metrics/internal/service"
 )
 
 type URLMetric struct {
@@ -19,14 +20,13 @@ type URLMetric struct {
 
 func UpdateMetric(storage repository.StorageInterface) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		log.Println("   **********************   ")
 		log.Println("")
+		log.Printf("   %s: %v   \n", req.Method, req.URL.Path)
 		if req.Method != http.MethodPost {
 			http.Error(res, "only POST request accepted", http.StatusMethodNotAllowed)
 			return
 		}
 
-		log.Printf("'%v', type: %T\r\n", req.URL.Path, req.URL.Path)
 		splitURL := strings.Split(req.URL.Path, "/")[1:]
 
 		// validate
