@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/isbluetip/metrics/internal/repository"
-	"github.com/xxx/metrics/internal/server"
+	"github.com/isBlueTip/metrics/internal/repository"
+	"github.com/isBlueTip/metrics/internal/server"
 )
 
 func run() error {

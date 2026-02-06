@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/xxx/metrics/internal/models"
+	"github.com/isBlueTip/metrics/internal/models"
 	"strconv"
 )
 

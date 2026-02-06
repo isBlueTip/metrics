@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/xxx/metrics/internal/models"
+	"github.com/isBlueTip/metrics/internal/models"
 )
 
 const serverAddr string = "127.0.0.1:8080"

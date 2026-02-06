@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/xxx/metrics/internal/agent"
+	"github.com/isBlueTip/metrics/internal/agent"
 )
 
 const pollInterval time.Duration = 2 * time.Second

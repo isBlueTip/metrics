@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/xxx/metrics/internal/models"
+	"github.com/isBlueTip/metrics/internal/models"
 )
 
 func TestSender_Send(t *testing.T) {

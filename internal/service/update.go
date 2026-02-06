@@ -1,7 +1,7 @@
 package service
 
 import (
-	"github.com/isbluetip/metrics/internal/repository"
+	"github.com/isBlueTip/metrics/internal/repository"
 )
 
 func UpdateCounter(storage repository.StorageInterface, name string, val int64) {

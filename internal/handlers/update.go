@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/isbluetip/metrics/internal/repository"
-	"github.com/xxx/metrics/internal/models"
-	"github.com/xxx/metrics/internal/service"
+	"github.com/isBlueTip/metrics/internal/models"
+	"github.com/isBlueTip/metrics/internal/repository"
+	"github.com/isBlueTip/metrics/internal/service"
 )
 
 type URLMetric struct {
