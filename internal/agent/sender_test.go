@@ -9,9 +9,12 @@ import (
 	"github.com/isBlueTip/metrics/internal/models"
 )
 
+const serverAddr = "127.0.0.1:8080"
+
 func TestSender_Send(t *testing.T) {
 	type fields struct {
-		HC http.Client
+		HC   http.Client
+		Addr string
 	}
 	type args struct {
 		metricSet *MetricSet
@@ -25,7 +28,8 @@ func TestSender_Send(t *testing.T) {
 		{
 			name: "1 positive",
 			fields: fields{
-				HC: http.Client{},
+				HC:   http.Client{},
+				Addr: serverAddr,
 			},
 			args: args{
 				metricSet: &MetricSet{},
@@ -36,7 +40,8 @@ func TestSender_Send(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &Sender{
-				HC: tt.fields.HC,
+				HC:   tt.fields.HC,
+				Addr: serverAddr,
 			}
 			if err := s.Send(tt.args.metricSet); (err != nil) != tt.wantErr {
 				t.Errorf("Sender.Send() error = %v, wantErr %v", err, tt.wantErr)
@@ -65,7 +70,7 @@ func Test_generateURL(t *testing.T) {
 			want: &url.URL{
 				Scheme: "http",
 				Host:   serverAddr,
-				Path:   "/update/" + models.Gauge + "/" + "testName1" + "/" + "8558" + "/",
+				Path:   "/update/" + models.Gauge + "/" + "testName1" + "/" + "8558",
 			},
 		},
 		{name: "2 positive counter",
@@ -77,13 +82,13 @@ func Test_generateURL(t *testing.T) {
 			want: &url.URL{
 				Scheme: "http",
 				Host:   serverAddr,
-				Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560" + "/",
+				Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := generateURL(tt.args.metricType, tt.args.metricName, tt.args.metricVal); !reflect.DeepEqual(got, tt.want) {
+			if got := generateURL(serverAddr, tt.args.metricType, tt.args.metricName, tt.args.metricVal); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("generateURL() = %v, want %v", got, tt.want)
 			}
 		})
@@ -91,6 +96,10 @@ func Test_generateURL(t *testing.T) {
 }
 
 func Test_executeRequest(t *testing.T) {
+	sender := Sender{
+		HC:   http.Client{},
+		Addr: serverAddr,
+	}
 	type args struct {
 		u  *url.URL
 		hc http.Client
@@ -107,7 +116,7 @@ func Test_executeRequest(t *testing.T) {
 				u: &url.URL{
 					Scheme: "http",
 					Host:   serverAddr,
-					Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560" + "/",
+					Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560",
 				},
 				hc: http.Client{},
 			},
@@ -122,7 +131,7 @@ func Test_executeRequest(t *testing.T) {
 				u: &url.URL{
 					Scheme: "http",
 					Host:   serverAddr,
-					Path:   "/update/" + models.Counter + "/" + "" + "/" + "8560" + "/",
+					Path:   "/update/" + models.Counter + "/" + "" + "/" + "8560",
 				},
 				hc: http.Client{},
 			},
@@ -134,7 +143,7 @@ func Test_executeRequest(t *testing.T) {
 				u: &url.URL{
 					Scheme: "http",
 					Host:   serverAddr,
-					Path:   "/update/" + "models.Counter" + "/" + "testName2" + "/" + "8560" + "/",
+					Path:   "/update/" + "models.Counter" + "/" + "testName2" + "/" + "8560",
 				},
 				hc: http.Client{},
 			},
@@ -143,7 +152,7 @@ func Test_executeRequest(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if _, err := executeRequest(tt.args.u, tt.args.hc); (err != nil) != tt.wantErr {
+			if _, err := executeRequest(tt.args.u, sender); (err != nil) != tt.wantErr {
 				t.Errorf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
 			}
 		})

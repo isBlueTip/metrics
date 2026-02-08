@@ -1,6 +1,10 @@
 package handlers
 
 import (
+	"fmt"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -12,7 +16,7 @@ import (
 )
 
 func TestUpdateMetric(t *testing.T) {
-	storage := repository.MemStorage{}
+	storage := repository.NewStorage()
 	type args struct {
 		url    string
 		method string
@@ -30,34 +34,39 @@ func TestUpdateMetric(t *testing.T) {
 		{
 			name: "positive test #1",
 			args: args{
-				url:    "/update/gauge/r/9/",
-				method: "POST",
+				url:    "/update/gauge/Alloc/9",
+				method: http.MethodPost,
 			},
 			want: want{
-				status:      200,
-				response:    "",
+				status:      http.StatusOK,
+				response:    "{}",
 				contentType: "application/json",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(tt.args.method, tt.args.url, nil)
+			router := chi.NewRouter()
+
+			handler := UpdateMetric(storage)
+			router.Post("/update/{metricType}/{metricName}/{metricVal}", handler)
+
 			w := httptest.NewRecorder()
+			request := httptest.NewRequest(tt.args.method, tt.args.url, nil)
+			router.ServeHTTP(w, request)
 
-			handler := UpdateMetric(&storage)
-			handler(w, request)
 			res := w.Result()
-
-			assert.Equal(t, tt.want.status, res.StatusCode)
 			defer res.Body.Close()
 
 			resBody, err := io.ReadAll(res.Body)
+
+			require.Equal(t, tt.want.status, res.StatusCode, fmt.Sprintf("body: %s\n", resBody))
 
 			require.NoError(t, err)
 
 			assert.JSONEq(t, tt.want.response, string(resBody))
 			//assert.Equal(t, tt.want.contentType, res.ContentType)
+
 		})
 	}
 }
