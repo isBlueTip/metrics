@@ -58,13 +58,9 @@ type URLMetric struct {
 
 func UpdateMetric(storage repository.StorageInterface) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		fmt.Printf("url: %s\n", req.URL)
 		metricType := chi.URLParam(req, "metricType")
 		metricName := chi.URLParam(req, "metricName")
 		metricVal := chi.URLParam(req, "metricVal")
-		fmt.Printf("metricType: %s\n", metricType)
-		fmt.Printf("metricName: %s\n", metricName)
-		fmt.Printf("metricVal: %s\n", metricVal)
 
 		if metricType != models.Gauge && metricType != models.Counter {
 			err := fmt.Errorf("metricType: '%s', expected '%s' or '%s'", metricType, models.Gauge, models.Counter)

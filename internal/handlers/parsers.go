@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/isBlueTip/metrics/internal/models"
 	"strconv"
+
+	"github.com/isBlueTip/metrics/internal/models"
 )
 
 func ParseValue(metricType string, value string) (interface{}, error) {
@@ -13,6 +14,6 @@ func ParseValue(metricType string, value string) (interface{}, error) {
 	case models.Counter:
 		return strconv.ParseInt(value, 10, 64)
 	default:
-		return nil, fmt.Errorf("unknown metric type, expected '%s' or '%s'", models.Gauge, models.Counter)
+		return nil, fmt.Errorf("unknown metric type: %s, expected '%s' or '%s'", metricType, models.Gauge, models.Counter)
 	}
 }

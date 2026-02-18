@@ -123,8 +123,8 @@ func generateURL(host, metricType, metricName, metricVal string) *url.URL {
 }
 
 func executeRequest(u *url.URL, s Sender) (*http.Response, error) {
-	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
 	log.Printf("sending metric to url: %s\n", u.String())
+	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
