@@ -20,7 +20,7 @@ func TestSender_Send(t *testing.T) {
 		}
 	})
 
-	var server *httptest.Server = httptest.NewServer(handler)
+	var server = httptest.NewServer(handler)
 
 	type fields struct {
 		HC   http.Client
@@ -180,12 +180,12 @@ func Test_executeRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp, err := executeRequest(tt.args.u, sender)
-			defer resp.Body.Close()
 
 			if (err != nil) != tt.wantErr {
 				t.Errorf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
 				return
 			}
+			defer resp.Body.Close()
 
 			if tt.want != nil && resp != nil {
 				if resp.StatusCode != tt.want.StatusCode {
