@@ -1,23 +1,23 @@
 package repository
 
-type StorageInterface interface {
-	AddGauge(name string, val float64)
-	AddCounter(name string, val int64)
+type Storage interface {
+	SetGauge(name string, val float64)
+	SetCounter(name string, val int64)
 }
 
 type MemStorage struct {
-	Gauge   map[string]float64
-	Counter map[string]int64
+	gauge   map[string]float64
+	counter map[string]int64
 }
 
-func (s *MemStorage) AddGauge(name string, val float64) {
-	s.Gauge[name] = val
+func (s *MemStorage) SetGauge(name string, val float64) {
+	s.gauge[name] = val
 }
 
-func (s *MemStorage) AddCounter(name string, val int64) {
-	s.Counter[name] += val
+func (s *MemStorage) SetCounter(name string, val int64) {
+	s.counter[name] += val
 }
 
-func NewStorage() *MemStorage {
-	return &MemStorage{Gauge: make(map[string]float64), Counter: make(map[string]int64)}
+func NewStorage() Storage {
+	return &MemStorage{gauge: make(map[string]float64), counter: make(map[string]int64)}
 }

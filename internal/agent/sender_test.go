@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/isBlueTip/metrics/internal/models"
 )
@@ -69,11 +70,13 @@ func Test_generateURL(t *testing.T) {
 		metricVal  string
 	}
 	tests := []struct {
-		name string
-		args args
-		want *url.URL
+		name    string
+		args    args
+		want    *url.URL
+		wantErr bool
 	}{
-		{name: "1 positive gauge",
+		{
+			name: "1 positive gauge",
 			args: args{
 				metricType: models.Gauge,
 				metricName: "testName1",
@@ -84,8 +87,10 @@ func Test_generateURL(t *testing.T) {
 				Host:   serverAddr,
 				Path:   "/update/" + models.Gauge + "/" + "testName1" + "/" + "8558",
 			},
+			wantErr: false,
 		},
-		{name: "2 positive counter",
+		{
+			name: "2 positive counter",
 			args: args{
 				metricType: models.Counter,
 				metricName: "testName2",
@@ -96,11 +101,27 @@ func Test_generateURL(t *testing.T) {
 				Host:   serverAddr,
 				Path:   "/update/" + models.Counter + "/" + "testName2" + "/" + "8560",
 			},
+			wantErr: false,
+		},
+		{
+			name: "3 negative",
+			args: args{
+				metricType: "%",
+				metricName: "testName3",
+				metricVal:  "5555",
+			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := generateURL(serverAddr, tt.args.metricType, tt.args.metricName, tt.args.metricVal); !reflect.DeepEqual(got, tt.want) {
+			got, err := generateURL(serverAddr, tt.args.metricType, tt.args.metricName, tt.args.metricVal)
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("generateURL() error: %s, wantErr = %v\n", err, tt.wantErr)
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("generateURL() = %+v, want %+v", got, tt.want)
 			}
 		})
@@ -108,7 +129,7 @@ func Test_generateURL(t *testing.T) {
 }
 
 func Test_executeRequest(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	dummyHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/update/" + models.Counter + "/" + "testName2" + "/" + "8560":
 			w.WriteHeader(http.StatusOK)
@@ -116,11 +137,13 @@ func Test_executeRequest(t *testing.T) {
 			http.Error(w, "", http.StatusBadRequest)
 		case "/update/" + "models.Counter" + "/" + "testName2" + "/" + "8560":
 			http.Error(w, "", http.StatusNotFound)
+		case "/timeout":
+			<-r.Context().Done()
 		default:
 			http.Error(w, "", http.StatusInternalServerError)
 		}
-	})
-	server := httptest.NewServer(handler)
+	}
+	server := httptest.NewServer(http.HandlerFunc(dummyHandler))
 	defer server.Close()
 
 	makeURL := func(path string) *url.URL {
@@ -129,7 +152,7 @@ func Test_executeRequest(t *testing.T) {
 	}
 
 	sender := Sender{
-		HC:   http.Client{},
+		HC:   http.Client{Timeout: 2 * time.Second},
 		Addr: makeURL("").Host,
 	}
 	type args struct {
@@ -176,13 +199,32 @@ func Test_executeRequest(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "request building error",
+			args: args{
+				u:  makeURL("/timeout"),
+				hc: http.Client{},
+			},
+			wantErr: true,
+		},
+		{
+			name: "http client error",
+			args: args{
+				u:  makeURL("/timeout"),
+				hc: http.Client{},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := executeRequest(tt.args.u, sender)
+			t.Logf("url: %s\n", tt.args.u)
+			resp, err := sender.executeRequest(tt.args.u)
 
-			if (err != nil) != tt.wantErr {
-				t.Errorf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
+			if err != nil {
+				if !tt.wantErr {
+					t.Fatalf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
+				}
 				return
 			}
 			defer resp.Body.Close()

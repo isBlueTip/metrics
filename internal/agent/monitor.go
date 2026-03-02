@@ -1,19 +1,20 @@
 package agent
 
 import (
-	"log"
 	"math/rand"
 	"runtime"
 	"time"
 )
 
+var randomValueGen = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 type MetricSet struct {
-	//runtime.MemStats
+	//MemStat runtime.MemStats
 	Alloc         uint64
 	BuckHashSys   uint64
 	Frees         uint64
 	GCCPUFraction float64
-	GCSys         float64
+	GCSys         uint64
 	HeapAlloc     uint64
 	HeapIdle      uint64
 	HeapInuse     uint64
@@ -36,19 +37,20 @@ type MetricSet struct {
 	StackSys      uint64
 	Sys           uint64
 	TotalAlloc    uint64
-	PollCount     int
+	PollCount     uint64
 	RandomValue   int64
 }
 
 func (m *MetricSet) Collect() {
 	memstat := &runtime.MemStats{}
 	runtime.ReadMemStats(memstat)
+	//runtime.ReadMemStats(&m.MemStat)
 
 	m.Alloc = memstat.Alloc
 	m.BuckHashSys = memstat.BuckHashSys
 	m.Frees = memstat.Frees
 	m.GCCPUFraction = memstat.GCCPUFraction
-	m.GCSys = memstat.GCCPUFraction
+	m.GCSys = memstat.GCSys
 	m.HeapAlloc = memstat.HeapAlloc
 	m.HeapIdle = memstat.HeapIdle
 	m.HeapInuse = memstat.HeapInuse
@@ -72,9 +74,8 @@ func (m *MetricSet) Collect() {
 	m.Sys = memstat.Sys
 	m.TotalAlloc = memstat.TotalAlloc
 
-	x := rand.New(rand.NewSource(time.Now().UnixNano()))
+	//x := rand.New(rand.NewSource(time.Now().UnixNano()))
 	m.PollCount += 1
-	m.RandomValue = x.Int63()
-
-	log.Printf("metricSet collected: %+v\n", *m)
+	//m.RandomValue = x.Int63()
+	m.RandomValue = randomValueGen.Int63()
 }

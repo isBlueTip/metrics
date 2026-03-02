@@ -1,16 +1,16 @@
 package repository
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/isBlueTip/metrics/internal/models"
+	"github.com/stretchr/testify/require"
 )
 
-func TestMemStorage_AddGauge(t *testing.T) {
+func TestMemStorage_SetGauge(t *testing.T) {
 	type fields struct {
-		Gauge   map[string]float64
-		Counter map[string]int64
+		gauge   map[string]float64
+		counter map[string]int64
 	}
 	type args struct {
 		name string
@@ -24,8 +24,8 @@ func TestMemStorage_AddGauge(t *testing.T) {
 		{
 			name: "positive",
 			fields: fields{
-				Gauge:   make(map[string]float64),
-				Counter: make(map[string]int64),
+				gauge:   make(map[string]float64),
+				counter: make(map[string]int64),
 			},
 			args: args{
 				name: models.Gauge,
@@ -36,18 +36,19 @@ func TestMemStorage_AddGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				Gauge:   tt.fields.Gauge,
-				Counter: tt.fields.Counter,
+				gauge:   tt.fields.gauge,
+				counter: tt.fields.counter,
 			}
-			s.AddGauge(tt.args.name, tt.args.val)
+			s.SetGauge(tt.args.name, tt.args.val)
+			require.Equalf(t, tt.args.val, s.gauge[tt.args.name], "MemStorage.gauge[\"%s\"] = %v, want %v\n", tt.args.name, s.gauge[tt.args.name], tt.args.val)
 		})
 	}
 }
 
-func TestMemStorage_AddCounter(t *testing.T) {
+func TestMemStorage_SetCounter(t *testing.T) {
 	type fields struct {
-		Gauge   map[string]float64
-		Counter map[string]int64
+		gauge   map[string]float64
+		counter map[string]int64
 	}
 	type args struct {
 		name string
@@ -61,8 +62,8 @@ func TestMemStorage_AddCounter(t *testing.T) {
 		{
 			name: "positive",
 			fields: fields{
-				Gauge:   make(map[string]float64),
-				Counter: make(map[string]int64),
+				gauge:   make(map[string]float64),
+				counter: make(map[string]int64),
 			},
 			args: args{
 				name: models.Counter,
@@ -73,26 +74,21 @@ func TestMemStorage_AddCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := &MemStorage{
-				Gauge:   tt.fields.Gauge,
-				Counter: tt.fields.Counter,
+				gauge:   tt.fields.gauge,
+				counter: tt.fields.counter,
 			}
-			s.AddCounter(tt.args.name, tt.args.val)
+			s.SetCounter(tt.args.name, tt.args.val)
+			require.Equalf(t, tt.args.val, s.counter[tt.args.name], "MemStorage.counter[\"%s\"] = %v, want %v\n", tt.args.name, s.counter[tt.args.name], tt.args.val)
 		})
 	}
 }
 
 func TestNewStorage(t *testing.T) {
-	tests := []struct {
-		name string
-		want *MemStorage
-	}{
-		// TODO: Add test cases.
+	want := &MemStorage{
+		gauge:   make(map[string]float64),
+		counter: make(map[string]int64),
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := NewStorage(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewStorage() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	got := NewStorage()
+	require.EqualValuesf(t, got, want, "NewStorage() = %v, want %v", got, want)
+
 }

@@ -9,8 +9,8 @@ import (
 	"github.com/isBlueTip/metrics/internal/repository"
 )
 
-// func Router(storage repository.StorageInterface) *http.ServeMux {
-func Router(storage repository.StorageInterface) *chi.Mux {
+// func Router(storage repository.Storage) *http.ServeMux {
+func Router(storage repository.Storage) *chi.Mux {
 	//mux := http.NewServeMux()
 	//mux.Handle("/update/", http.StripPrefix("/update", handlers.UpdateMetric(storage)))
 	//return mux

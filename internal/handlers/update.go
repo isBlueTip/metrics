@@ -17,7 +17,7 @@ type URLMetric struct {
 	Value      interface{}
 }
 
-func UpdateMetric(storage repository.StorageInterface) http.HandlerFunc {
+func UpdateMetric(storage repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		metricType := chi.URLParam(req, "metricType")
 		metricName := chi.URLParam(req, "metricName")
