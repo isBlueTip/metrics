@@ -3,10 +3,7 @@ package agent
 import (
 	"math/rand"
 	"runtime"
-	"time"
 )
-
-var randomValueGen = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 type MetricSet struct {
 	//MemStat runtime.MemStats
@@ -74,8 +71,6 @@ func (m *MetricSet) Collect() {
 	m.Sys = memstat.Sys
 	m.TotalAlloc = memstat.TotalAlloc
 
-	//x := rand.New(rand.NewSource(time.Now().UnixNano()))
 	m.PollCount += 1
-	//m.RandomValue = x.Int63()
-	m.RandomValue = randomValueGen.Int63()
+	m.RandomValue = rand.Int63()
 }

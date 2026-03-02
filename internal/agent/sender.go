@@ -124,7 +124,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 	if err != nil {
 		return err
 	}
-	resp.Body.Close()
+	resp.Body.Close() // todo move into executeRequest
 
 	return nil
 

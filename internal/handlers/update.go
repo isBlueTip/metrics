@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -22,12 +21,6 @@ func UpdateMetric(storage repository.Storage) http.HandlerFunc {
 		metricType := chi.URLParam(req, "metricType")
 		metricName := chi.URLParam(req, "metricName")
 		metricVal := chi.URLParam(req, "metricVal")
-
-		if metricType != models.Gauge && metricType != models.Counter {
-			err := fmt.Errorf("metricType: '%s', expected '%s' or '%s'", metricType, models.Gauge, models.Counter)
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
 
 		parsedValue, err := ParseValue(metricType, metricVal)
 		if err != nil {
