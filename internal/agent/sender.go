@@ -21,6 +21,8 @@ func (s *Sender) executeRequest(u *url.URL) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Content-Type", "text/plain")
+
 	resp, err := s.HC.Do(req)
 	if err != nil {
 		return nil, err
@@ -36,7 +38,35 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 	var resp *http.Response
 	var err error
 
-	u, err = generateURL(s.Addr, models.Gauge, "Alloc", strconv.FormatUint(metricSet.Alloc, 10))
+	for k, v := range metricSet.Uints {
+		switch k {
+		case "PollCount":
+			u, err = generateURL(s.Addr, models.Counter, k, strconv.FormatUint(v, 10))
+		default:
+			u, err = generateURL(s.Addr, models.Gauge, k, strconv.FormatUint(v, 10))
+		}
+		if err != nil {
+			return err
+		}
+		resp, err = s.executeRequest(u)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+	}
+	for k, v := range metricSet.Floats {
+		u, err = generateURL(s.Addr, models.Gauge, k, strconv.FormatFloat(v, 'f', 4, 64))
+		if err != nil {
+			return err
+		}
+		resp, err = s.executeRequest(u)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+	}
+
+	u, err = generateURL(s.Addr, models.Gauge, "RandomValue", strconv.FormatInt(metricSet.RandomValue, 10))
 	if err != nil {
 		return err
 	}
@@ -46,85 +76,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 	}
 	resp.Body.Close()
 
-	u, err = generateURL(s.Addr, models.Gauge, "BuckHashSys", strconv.FormatUint(metricSet.BuckHashSys, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "Frees", strconv.FormatUint(metricSet.Frees, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "GCCPUFraction", strconv.FormatFloat(metricSet.GCCPUFraction, 'f', 4, 64))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "GCSys", strconv.FormatUint(metricSet.GCSys, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "HeapAlloc", strconv.FormatUint(metricSet.HeapAlloc, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "HeapIdle", strconv.FormatUint(metricSet.HeapIdle, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "HeapInuse", strconv.FormatUint(metricSet.HeapInuse, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close()
-
-	u, err = generateURL(s.Addr, models.Gauge, "HeapObjects", strconv.FormatUint(metricSet.HeapObjects, 10))
-	if err != nil {
-		return err
-	}
-	resp, err = s.executeRequest(u)
-	if err != nil {
-		return err
-	}
-	resp.Body.Close() // todo move into executeRequest
+	metricSet.Uints["PollCount"] = 0
 
 	return nil
 

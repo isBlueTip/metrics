@@ -9,14 +9,17 @@ import (
 )
 
 const pollInterval time.Duration = 2 * time.Second
-const reportInterval time.Duration = 4 * time.Second
+const reportInterval time.Duration = 10 * time.Second
 
 const serverAddr string = "127.0.0.1:8080"
 
 func run() error {
-	metric := &agent.MetricSet{}
+	metric := &agent.MetricSet{
+		Uints:  make(map[string]uint64),
+		Floats: make(map[string]float64),
+	}
 	sender := &agent.Sender{
-		HC:   http.Client{},
+		HC:   http.Client{Timeout: 20 * time.Second},
 		Addr: serverAddr,
 	}
 

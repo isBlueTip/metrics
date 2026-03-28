@@ -7,70 +7,43 @@ import (
 
 type MetricSet struct {
 	//MemStat runtime.MemStats
-	Alloc         uint64
-	BuckHashSys   uint64
-	Frees         uint64
-	GCCPUFraction float64
-	GCSys         uint64
-	HeapAlloc     uint64
-	HeapIdle      uint64
-	HeapInuse     uint64
-	HeapObjects   uint64
-	HeapReleased  uint64
-	HeapSys       uint64
-	LastGC        uint64
-	Lookups       uint64
-	MCacheInuse   uint64
-	MCacheSys     uint64
-	MSpanInuse    uint64
-	MSpanSys      uint64
-	Mallocs       uint64
-	NextGC        uint64
-	NumForcedGC   uint32
-	NumGC         uint32
-	OtherSys      uint64
-	PauseTotalNs  uint64
-	StackInuse    uint64
-	StackSys      uint64
-	Sys           uint64
-	TotalAlloc    uint64
-	PollCount     uint64
-	RandomValue   int64
+	Uints       map[string]uint64
+	Floats      map[string]float64
+	RandomValue int64
 }
 
 func (m *MetricSet) Collect() {
 	memstat := &runtime.MemStats{}
 	runtime.ReadMemStats(memstat)
-	//runtime.ReadMemStats(&m.MemStat)
 
-	m.Alloc = memstat.Alloc
-	m.BuckHashSys = memstat.BuckHashSys
-	m.Frees = memstat.Frees
-	m.GCCPUFraction = memstat.GCCPUFraction
-	m.GCSys = memstat.GCSys
-	m.HeapAlloc = memstat.HeapAlloc
-	m.HeapIdle = memstat.HeapIdle
-	m.HeapInuse = memstat.HeapInuse
-	m.HeapObjects = memstat.HeapObjects
-	m.HeapReleased = memstat.HeapReleased
-	m.HeapSys = memstat.HeapSys
-	m.LastGC = memstat.LastGC
-	m.Lookups = memstat.Lookups
-	m.MCacheInuse = memstat.MCacheInuse
-	m.MCacheSys = memstat.MCacheSys
-	m.MSpanInuse = memstat.MSpanInuse
-	m.MSpanSys = memstat.MSpanSys
-	m.Mallocs = memstat.Mallocs
-	m.NextGC = memstat.NextGC
-	m.NumForcedGC = memstat.NumForcedGC
-	m.NumGC = memstat.NumGC
-	m.OtherSys = memstat.OtherSys
-	m.PauseTotalNs = memstat.PauseTotalNs
-	m.StackInuse = memstat.StackInuse
-	m.StackSys = memstat.StackSys
-	m.Sys = memstat.Sys
-	m.TotalAlloc = memstat.TotalAlloc
+	m.Uints["Alloc"] = memstat.Alloc
+	m.Uints["BuckHashSys"] = memstat.BuckHashSys
+	m.Uints["Frees"] = memstat.Frees
+	m.Floats["GCCPUFraction"] = memstat.GCCPUFraction
+	m.Uints["GCSys"] = memstat.GCSys
+	m.Uints["HeapAlloc"] = memstat.HeapAlloc
+	m.Uints["HeapIdle"] = memstat.HeapIdle
+	m.Uints["HeapInuse"] = memstat.HeapInuse
+	m.Uints["HeapObjects"] = memstat.HeapObjects
+	m.Uints["HeapReleased"] = memstat.HeapReleased
+	m.Uints["HeapSys"] = memstat.HeapSys
+	m.Uints["LastGC"] = memstat.LastGC
+	m.Uints["Lookups"] = memstat.Lookups
+	m.Uints["MCacheInuse"] = memstat.MCacheInuse
+	m.Uints["MCacheSys"] = memstat.MCacheSys
+	m.Uints["MSpanInuse"] = memstat.MSpanInuse
+	m.Uints["MSpanSys"] = memstat.MSpanSys
+	m.Uints["Mallocs"] = memstat.Mallocs
+	m.Uints["NextGC"] = memstat.NextGC
+	m.Uints["NumForcedGC"] = uint64(memstat.NumForcedGC)
+	m.Uints["NumGC"] = uint64(memstat.NumGC)
+	m.Uints["OtherSys"] = memstat.OtherSys
+	m.Uints["PauseTotalNs"] = memstat.PauseTotalNs
+	m.Uints["StackInuse"] = memstat.StackInuse
+	m.Uints["StackSys"] = memstat.StackSys
+	m.Uints["Sys"] = memstat.Sys
+	m.Uints["TotalAlloc"] = memstat.TotalAlloc
+	m.Uints["PollCount"] += 1
 
-	m.PollCount += 1
 	m.RandomValue = rand.Int63()
 }

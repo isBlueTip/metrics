@@ -43,7 +43,10 @@ func TestSender_Send(t *testing.T) {
 				Addr: server.URL,
 			},
 			args: args{
-				metricSet: &MetricSet{},
+				metricSet: &MetricSet{
+					Uints:  make(map[string]uint64),
+					Floats: make(map[string]float64),
+				},
 			},
 			wantErr: false,
 		},
@@ -132,7 +135,12 @@ func Test_executeRequest(t *testing.T) {
 	dummyHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/update/" + models.Counter + "/" + "testName2" + "/" + "8560":
-			w.WriteHeader(http.StatusOK)
+			if r.Header.Get("Content-Type") == "text/plain" {
+				w.WriteHeader(http.StatusOK)
+			} else {
+				w.WriteHeader(http.StatusBadRequest)
+			}
+
 		case "/update/" + models.Counter + "/" + "" + "/" + "8560":
 			http.Error(w, "", http.StatusBadRequest)
 		case "/update/" + "models.Counter" + "/" + "testName2" + "/" + "8560":
