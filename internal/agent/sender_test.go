@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/isBlueTip/metrics/internal/models"
+	"github.com/sethgrid/pester"
 )
 
 const serverAddr = "127.0.0.1:8080"
@@ -24,7 +25,7 @@ func TestSender_Send(t *testing.T) {
 	var server = httptest.NewServer(handler)
 
 	type fields struct {
-		HC   http.Client
+		HC   *pester.Client
 		Addr string
 	}
 	type args struct {
@@ -39,7 +40,7 @@ func TestSender_Send(t *testing.T) {
 		{
 			name: "1 positive",
 			fields: fields{
-				HC:   http.Client{},
+				HC:   pester.New(),
 				Addr: server.URL,
 			},
 			args: args{
@@ -159,10 +160,14 @@ func Test_executeRequest(t *testing.T) {
 		return u
 	}
 
+	client := pester.New()
+	client.Timeout = 2 * time.Second
+
 	sender := Sender{
-		HC:   http.Client{Timeout: 2 * time.Second},
+		HC:   client,
 		Addr: makeURL("").Host,
 	}
+
 	type args struct {
 		u  *url.URL
 		hc http.Client

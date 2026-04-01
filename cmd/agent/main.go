@@ -2,10 +2,10 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/isBlueTip/metrics/internal/agent"
+	"github.com/sethgrid/pester"
 )
 
 const pollInterval time.Duration = 2 * time.Second
@@ -18,8 +18,12 @@ func run() error {
 		Uints:  make(map[string]uint64),
 		Floats: make(map[string]float64),
 	}
+
+	client := pester.New()
+	client.Timeout = 20 * time.Second
+
 	sender := &agent.Sender{
-		HC:   http.Client{Timeout: 20 * time.Second},
+		HC:   client,
 		Addr: serverAddr,
 	}
 

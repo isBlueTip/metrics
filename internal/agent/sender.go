@@ -7,14 +7,14 @@ import (
 	"strconv"
 
 	"github.com/isBlueTip/metrics/internal/models"
+	"github.com/sethgrid/pester"
 )
 
 type Sender struct {
-	HC   http.Client
+	HC   *pester.Client
 	Addr string
 }
 
-// func executeRequest(u *url.URL, s Sender) (*http.Response, error) {
 func (s *Sender) executeRequest(u *url.URL) (*http.Response, error) {
 	log.Printf("sending metric to url: %s\n", u.String())
 	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
