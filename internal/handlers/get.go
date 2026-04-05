@@ -21,13 +21,13 @@ func GetAllMetrics(s repository.Storage) http.HandlerFunc {
 		for _, g := range gauges {
 			str := fmt.Sprintf("%s: %.2f\n", g.Name, g.Value)
 			buf = append(buf, str)
-
 		}
 
 		for _, c := range counters {
 			str := fmt.Sprintf("%s: %d\n", c.Name, c.Value)
 			buf = append(buf, str)
 		}
+		res.Header().Set("Content-Type", "text/plain")
 		res.Write([]byte(strings.Join(buf, "")))
 	}
 }

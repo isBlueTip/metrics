@@ -228,6 +228,78 @@ func TestMemStorage_GetCounter(t *testing.T) {
 	}
 }
 
+func TestMemStorage_GetGauges(t *testing.T) {
+	type fields struct {
+		gauge   map[string]float64
+		counter map[string]int64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantRes []models.GaugeModel
+	}{
+		{
+			name: "1 positive",
+			fields: fields{
+				gauge: map[string]float64{
+					"metric_1": 64.6,
+					"metric_2": 5933.6515616,
+				},
+			},
+			wantRes: []models.GaugeModel{
+				{Name: "metric_1", Value: 64.6},
+				{Name: "metric_2", Value: 5933.6515616},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				gauge:   tt.fields.gauge,
+				counter: tt.fields.counter,
+			}
+			gotRes := s.GetGauges()
+			assert.ElementsMatch(t, gotRes, tt.wantRes, "MemStorage.GetGauges() = %v, want %v", gotRes, tt.wantRes)
+		})
+	}
+}
+
+func TestMemStorage_GetCounters(t *testing.T) {
+	type fields struct {
+		gauge   map[string]float64
+		counter map[string]int64
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		wantRes []models.CounterModel
+	}{
+		{
+			name: "1 positive",
+			fields: fields{
+				counter: map[string]int64{
+					"metric_3": 18,
+					"metric_4": 5165151,
+				},
+			},
+			wantRes: []models.CounterModel{
+				{Name: "metric_3", Value: 18},
+				{Name: "metric_4", Value: 5165151},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := &MemStorage{
+				gauge:   tt.fields.gauge,
+				counter: tt.fields.counter,
+			}
+			gotRes := s.GetCounters()
+			assert.ElementsMatch(t, gotRes, tt.wantRes, "MemStorage.GetCounters() = %v, want %v", gotRes, tt.wantRes)
+		})
+	}
+}
+
 func TestNewStorage(t *testing.T) {
 	want := &MemStorage{
 		gauge:   make(map[string]float64),

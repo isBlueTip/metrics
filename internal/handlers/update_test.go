@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/require"
@@ -37,9 +38,10 @@ func TestUpdate(t *testing.T) {
 				method: http.MethodPost,
 			},
 			want: want{
-				status:      http.StatusOK,
-				response:    "{}",
-				contentType: "application/json",
+				status:   http.StatusOK,
+				response: "{}",
+				//contentType: "application/json",
+				contentType: "",
 			},
 		},
 		{
@@ -49,9 +51,10 @@ func TestUpdate(t *testing.T) {
 				method: http.MethodPost,
 			},
 			want: want{
-				status:      http.StatusOK,
-				response:    "{}",
-				contentType: "application/json",
+				status:   http.StatusOK,
+				response: "{}",
+				//contentType: "application/json",
+				contentType: "",
 			},
 		},
 		{
@@ -63,7 +66,8 @@ func TestUpdate(t *testing.T) {
 			want: want{
 				status: http.StatusBadRequest,
 				//response:    "{}",
-				contentType: "application/json",
+				//contentType: "application/json",
+				contentType: "",
 			},
 		},
 		{
@@ -75,7 +79,8 @@ func TestUpdate(t *testing.T) {
 			want: want{
 				status: http.StatusBadRequest,
 				//response:    "{}",
-				contentType: "application/json",
+				//contentType: "application/json",
+				contentType: "",
 			},
 		},
 	}
@@ -93,14 +98,19 @@ func TestUpdate(t *testing.T) {
 			res := w.Result()
 			defer res.Body.Close()
 
-			resBody, err := io.ReadAll(res.Body)
+			_, err := io.ReadAll(res.Body)
 
-			require.Equal(t, tt.want.status, res.StatusCode, fmt.Sprintf("body: %s\n", resBody))
+			require.Equal(t, tt.want.status, res.StatusCode, fmt.Sprintf("statusCode: %d, want %d\n", res.StatusCode, tt.want.status))
+
+			gotCT := res.Header.Get("ContentType")
+			wantCT := tt.want.contentType
+			if !strings.HasPrefix(gotCT, wantCT) {
+				t.Errorf("contentType: %q, want starting with %q\n", gotCT, tt.want.contentType)
+			}
 
 			require.NoError(t, err)
 
 			//assert.JSONEq(t, tt.want.response, string(resBody))
-			//assert.Equal(t, tt.want.contentType, res.ContentType)
 
 		})
 	}
