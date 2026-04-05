@@ -14,7 +14,7 @@ import (
 	"github.com/isBlueTip/metrics/internal/repository"
 )
 
-func TestUpdateMetric(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	storage := repository.NewStorage()
 	type args struct {
 		url    string

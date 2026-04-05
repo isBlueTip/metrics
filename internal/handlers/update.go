@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/isBlueTip/metrics/internal/models"
@@ -18,8 +19,8 @@ type URLMetric struct {
 
 func UpdateMetric(storage repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		metricType := chi.URLParam(req, "metricType")
-		metricName := chi.URLParam(req, "metricName")
+		metricType := strings.ToLower(chi.URLParam(req, "metricType"))
+		metricName := strings.ToLower(chi.URLParam(req, "metricName"))
 		metricVal := chi.URLParam(req, "metricVal")
 
 		parsedValue, err := ParseValue(metricType, metricVal)
@@ -41,6 +42,7 @@ func UpdateMetric(storage repository.Storage) http.HandlerFunc {
 
 		body := "{}"
 
+		res.Header().Set("Content-Type", "text/html; charset=utf-8")
 		res.Write([]byte(body))
 	}
 }

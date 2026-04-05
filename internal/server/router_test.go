@@ -69,7 +69,7 @@ func TestRouter_Gauge(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, req)
 
-			got := tt.args.storage.GetGauge(tt.args.metricName)
+			got, _ := tt.args.storage.GetGauge(tt.args.metricName)
 			assert.Equalf(t, tt.want.statusCode, w.Code, "POST /update/%s/%s/%v/ err: statusCode = %v, want %v\n", models.Gauge, tt.args.metricName, tt.want.value, w.Code, tt.want.statusCode)
 
 			if tt.want.statusCode == http.StatusOK {
@@ -138,7 +138,7 @@ func TestRouter_Counter(t *testing.T) {
 			w := httptest.NewRecorder()
 			r.ServeHTTP(w, req)
 
-			got := tt.args.storage.GetCounter(tt.args.metricName)
+			got, _ := tt.args.storage.GetCounter(tt.args.metricName)
 			assert.Equalf(t, tt.want.statusCode, w.Code, "POST %s err: statusCode = %v, want %v\n", tt.args.path, w.Code, tt.want.statusCode)
 
 			if tt.want.statusCode == http.StatusOK {

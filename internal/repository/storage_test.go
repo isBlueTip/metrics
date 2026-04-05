@@ -171,7 +171,7 @@ func TestMemStorage_GetGauge(t *testing.T) {
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
 			}
-			if got := s.GetGauge(tt.args.name); got != tt.want {
+			if got, _ := s.GetGauge(tt.args.name); got != tt.want {
 				t.Errorf("MemStorage.GetGauge() = %v, want %v", got, tt.want)
 			}
 		})
@@ -221,7 +221,7 @@ func TestMemStorage_GetCounter(t *testing.T) {
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
 			}
-			if got := s.GetCounter(tt.args.name); got != tt.want {
+			if got, _ := s.GetCounter(tt.args.name); got != tt.want {
 				t.Errorf("MemStorage.GetCounter() = %v, want %v", got, tt.want)
 			}
 		})

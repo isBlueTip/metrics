@@ -37,7 +37,7 @@ func TestUpdateGauge(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			UpdateGauge(tt.args.storage, tt.args.name, tt.args.val)
-			got := tt.args.storage.GetGauge(tt.args.name)
+			got, _ := tt.args.storage.GetGauge(tt.args.name)
 			assert.Equalf(t, tt.args.val, got, "MemStorage.GetGauge(): %v, want %v\n", got, tt.args.val)
 		})
 	}
@@ -73,7 +73,7 @@ func TestUpdateCounter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			UpdateCounter(tt.args.storage, tt.args.name, tt.args.val)
-			got := tt.args.storage.GetCounter(tt.args.name)
+			got, _ := tt.args.storage.GetCounter(tt.args.name)
 			assert.Equalf(t, tt.args.val, got, "MemStorage.GetCounter(): %v, want %v\n", got, tt.args.val)
 		})
 	}
