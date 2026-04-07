@@ -1,19 +1,16 @@
 package main
 
 import (
+	"flag"
 	"log"
+	"net"
 	"time"
 
 	"github.com/isBlueTip/metrics/internal/agent"
 	"github.com/sethgrid/pester"
 )
 
-const pollInterval time.Duration = 2 * time.Second
-const reportInterval time.Duration = 10 * time.Second
-
-const serverAddr string = "127.0.0.1:8080"
-
-func run() error {
+func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval time.Duration) error {
 	metric := &agent.MetricSet{
 		Uints:  make(map[string]uint64),
 		Floats: make(map[string]float64),
@@ -24,7 +21,7 @@ func run() error {
 
 	sender := &agent.Sender{
 		HC:   client,
-		Addr: serverAddr,
+		Addr: net.JoinHostPort(serverAddr.Host, serverAddr.Port),
 	}
 
 	pollTicker := time.Tick(pollInterval)
@@ -48,7 +45,21 @@ func run() error {
 func main() {
 	log.SetFlags(log.Llongfile)
 
-	if err := run(); err != nil {
+	serverAddr := ServerAddress{Host: "localhost", Port: "8080"}
+
+	var pollSeconds uint
+	var reportSeconds uint
+
+	flag.Var(&serverAddr, "a", "Server address")
+	flag.UintVar(&pollSeconds, "p", 2, "Polling interval in seconds")
+	flag.UintVar(&reportSeconds, "r", 10, "Reporting interval in seconds")
+
+	flag.Parse()
+
+	pollInterval := time.Duration(pollSeconds) * time.Second
+	reportInterval := time.Duration(reportSeconds) * time.Second
+
+	if err := run(serverAddr, pollInterval, reportInterval); err != nil {
 		log.Println(err.Error())
 		//panic(err)
 	}

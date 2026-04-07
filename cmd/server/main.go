@@ -1,24 +1,31 @@
 package main
 
 import (
+	"flag"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/isBlueTip/metrics/internal/repository"
 	"github.com/isBlueTip/metrics/internal/server"
 )
 
-func run() error {
+func run(address *ServerAddress) error {
 	mux := server.Router(repository.NewStorage())
 
-	return http.ListenAndServe("127.0.0.1:8080", mux)
+	addrString := net.JoinHostPort(address.Host, address.Port)
+	return http.ListenAndServe(addrString, mux)
 
 }
 
 func main() {
 	log.SetFlags(log.Llongfile)
 
-	if err := run(); err != nil {
+	addr := ServerAddress{Host: "", Port: "8080"}
+	flag.Var(&addr, "a", "Parsing net address")
+	flag.Parse()
+
+	if err := run(&addr); err != nil {
 		panic(err)
 	}
 }
