@@ -39,9 +39,8 @@ func TestGetAllMetrics(t *testing.T) {
 
 			},
 			want: want{
-				status: http.StatusOK,
-				//response:    "",
-				contentType: "text/plain",
+				status:      http.StatusOK,
+				contentType: "text/html",
 			},
 		},
 	}
@@ -72,7 +71,7 @@ func TestGetAllMetrics(t *testing.T) {
 				t.Errorf("contentType: %q, want starting with %q\n", gotCT, tt.want.contentType)
 			}
 
-			//if strings.HasPrefix(tt.want.contentType, "text/plain") {
+			//if strings.HasPrefix(tt.want.contentType, "text/html") {
 			//	//
 			//} else if strings.HasPrefix(tt.want.contentType, "application/json") {
 			//	assert.JSONEq(t, tt.want.response, string(resBody))

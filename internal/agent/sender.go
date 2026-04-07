@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -52,6 +53,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		if err != nil {
 			return err
 		}
+		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}
 	for k, v := range metricSet.Floats {
@@ -63,6 +65,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		if err != nil {
 			return err
 		}
+		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 	}
 
@@ -74,6 +77,7 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 	if err != nil {
 		return err
 	}
+	io.Copy(io.Discard, resp.Body)
 	resp.Body.Close()
 
 	metricSet.Uints["PollCount"] = 0

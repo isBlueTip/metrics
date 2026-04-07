@@ -1,6 +1,10 @@
 package repository
 
-import "github.com/isBlueTip/metrics/internal/models"
+import (
+	"sync"
+
+	"github.com/isBlueTip/metrics/internal/models"
+)
 
 type Storage interface {
 	SetGauge(name string, val float64)
@@ -12,29 +16,40 @@ type Storage interface {
 }
 
 type MemStorage struct {
+	mu      sync.RWMutex
 	gauge   map[string]float64
 	counter map[string]int64
 }
 
 func (s *MemStorage) SetGauge(name string, val float64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.gauge[name] = val
 }
 
 func (s *MemStorage) SetCounter(name string, val int64) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.counter[name] += val
 }
 
 func (s *MemStorage) GetGauge(name string) (val float64, exists bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	val, exists = s.gauge[name]
 	return
 }
 
 func (s *MemStorage) GetCounter(name string) (val int64, exists bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	val, exists = s.counter[name]
 	return
 }
 
 func (s *MemStorage) GetGauges() (res []models.GaugeModel) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for n, v := range s.gauge {
 		record := models.GaugeModel{Name: n, Value: v}
 		res = append(res, record)
@@ -43,6 +58,8 @@ func (s *MemStorage) GetGauges() (res []models.GaugeModel) {
 }
 
 func (s *MemStorage) GetCounters() (res []models.CounterModel) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for n, v := range s.counter {
 		record := models.CounterModel{Name: n, Value: v}
 		res = append(res, record)

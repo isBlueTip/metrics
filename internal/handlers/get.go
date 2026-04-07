@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +13,24 @@ import (
 	"github.com/isBlueTip/metrics/internal/service"
 )
 
+const htmlTmpl = `
+	<!DOCTYPE html>
+	<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>{{.Title}}</title>
+	</head>
+	<body>
+		<p>{{.Metrics}}</p>
+	</body>
+	</html>
+	`
+
+type Data struct {
+	Title   string
+	Metrics template.HTML
+}
+
 func GetAllMetrics(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf []string
@@ -19,16 +38,29 @@ func GetAllMetrics(s repository.Storage) http.HandlerFunc {
 		counters := service.GetCounters(s)
 
 		for _, g := range gauges {
-			str := fmt.Sprintf("%s: %.2f\n", g.Name, g.Value)
+			str := fmt.Sprintf("%s: %.2f<br>", g.Name, g.Value)
 			buf = append(buf, str)
 		}
 
 		for _, c := range counters {
-			str := fmt.Sprintf("%s: %d\n", c.Name, c.Value)
+			str := fmt.Sprintf("%s: %d<br>", c.Name, c.Value)
 			buf = append(buf, str)
 		}
-		res.Header().Set("Content-Type", "text/plain")
-		res.Write([]byte(strings.Join(buf, "")))
+		res.Header().Set("Content-Type", "text/html")
+		tmpl, err := template.New("webpage").Parse(htmlTmpl)
+		if err != nil {
+			panic(err)
+		}
+
+		data := Data{
+			Title:   "title",
+			Metrics: template.HTML(strings.Join(buf, "\n")),
+		}
+
+		err = tmpl.Execute(res, data)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
