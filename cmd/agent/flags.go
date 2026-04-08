@@ -5,6 +5,12 @@ import (
 	"net"
 )
 
+type Config struct {
+	Address        *string `env:"ADDRESS"`
+	ReportInterval *uint   `env:"REPORT_INTERVAL"`
+	PollInterval   *uint   `env:"POLL_INTERVAL"`
+}
+
 type ServerAddress struct {
 	Host string
 	Port string

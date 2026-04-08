@@ -5,6 +5,10 @@ import (
 	"net"
 )
 
+type Config struct {
+	Address *string `env:"ADDRESS"`
+}
+
 type ServerAddress struct {
 	Host string
 	Port string

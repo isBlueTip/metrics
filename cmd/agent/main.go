@@ -6,6 +6,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/caarlos0/env/v6"
 	"github.com/isBlueTip/metrics/internal/agent"
 	"github.com/sethgrid/pester"
 )
@@ -55,6 +56,25 @@ func main() {
 	flag.UintVar(&reportSeconds, "r", 10, "Reporting interval in seconds")
 
 	flag.Parse()
+
+	var cfg Config
+
+	if err := env.Parse(&cfg); err != nil {
+		panic(err)
+	}
+
+	if cfg.Address != nil {
+		if err := serverAddr.Set(*cfg.Address); err != nil {
+			panic(err)
+		}
+	}
+	//fmt.Printf("PollInterval: %d, type: %T\n", cfg.PollInterval, cfg.PollInterval)
+	if cfg.PollInterval != nil {
+		pollSeconds = *cfg.PollInterval
+	}
+	if cfg.ReportInterval != nil {
+		reportSeconds = *cfg.ReportInterval
+	}
 
 	pollInterval := time.Duration(pollSeconds) * time.Second
 	reportInterval := time.Duration(reportSeconds) * time.Second
