@@ -23,6 +23,7 @@ func UpdateMetric(storage repository.Storage) http.HandlerFunc {
 		metricName := strings.ToLower(chi.URLParam(req, "metricName"))
 		metricVal := chi.URLParam(req, "metricVal")
 
+		// todo branch depending on metricType here and remove interface{}
 		parsedValue, err := ParseValue(metricType, metricVal)
 		if err != nil {
 			if errors.Is(err, strconv.ErrSyntax) {

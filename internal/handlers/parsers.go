@@ -7,6 +7,7 @@ import (
 	"github.com/isBlueTip/metrics/internal/models"
 )
 
+// todo get rid of interface{}
 func ParseValue(metricType string, value string) (interface{}, error) {
 	switch metricType {
 	case models.Gauge:

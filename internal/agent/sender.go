@@ -16,27 +16,31 @@ type Sender struct {
 	Addr string
 }
 
-func (s *Sender) executeRequest(u *url.URL) (*http.Response, error) {
+func (s *Sender) executeRequest(u *url.URL) error {
 	log.Printf("sending metric to url: %s\n", u.String())
 	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set("Content-Type", "text/plain")
 
 	resp, err := s.HC.Do(req)
 	if err != nil {
-		return nil, err
+		return err
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return err
 	}
 
 	log.Printf("status: %s\n", resp.Status)
 
-	return resp, err
+	return err
 }
 
 func (s *Sender) Send(metricSet *MetricSet) error {
 	var u *url.URL
-	var resp *http.Response
 	var err error
 
 	for k, v := range metricSet.Uints {
@@ -49,36 +53,30 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 		if err != nil {
 			return err
 		}
-		resp, err = s.executeRequest(u)
+		err = s.executeRequest(u)
 		if err != nil {
 			return err
 		}
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
 	}
 	for k, v := range metricSet.Floats {
 		u, err = generateURL(s.Addr, models.Gauge, k, strconv.FormatFloat(v, 'f', 4, 64))
 		if err != nil {
 			return err
 		}
-		resp, err = s.executeRequest(u)
+		err = s.executeRequest(u)
 		if err != nil {
 			return err
 		}
-		io.Copy(io.Discard, resp.Body)
-		resp.Body.Close()
 	}
 
 	u, err = generateURL(s.Addr, models.Gauge, "RandomValue", strconv.FormatInt(metricSet.RandomValue, 10))
 	if err != nil {
 		return err
 	}
-	resp, err = s.executeRequest(u)
+	err = s.executeRequest(u)
 	if err != nil {
 		return err
 	}
-	io.Copy(io.Discard, resp.Body)
-	resp.Body.Close()
 
 	metricSet.Uints["PollCount"] = 0
 

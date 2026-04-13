@@ -176,7 +176,6 @@ func Test_executeRequest(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    *http.Response
 		wantErr bool
 	}{
 		{
@@ -184,9 +183,6 @@ func Test_executeRequest(t *testing.T) {
 			args: args{
 				u:  makeURL("/update/" + models.Counter + "/" + "testName2" + "/" + "8560"),
 				hc: http.Client{},
-			},
-			want: &http.Response{
-				StatusCode: http.StatusOK,
 			},
 			wantErr: false,
 		},
@@ -196,9 +192,6 @@ func Test_executeRequest(t *testing.T) {
 				u:  makeURL("/update/" + models.Counter + "/" + "" + "/" + "8560"),
 				hc: http.Client{},
 			},
-			want: &http.Response{
-				StatusCode: http.StatusBadRequest,
-			},
 			wantErr: false,
 		},
 		{
@@ -206,9 +199,6 @@ func Test_executeRequest(t *testing.T) {
 			args: args{
 				u:  makeURL("/update/" + "models.Counter" + "/" + "testName2" + "/" + "8560"),
 				hc: http.Client{},
-			},
-			want: &http.Response{
-				StatusCode: http.StatusNotFound,
 			},
 			wantErr: false,
 		},
@@ -232,20 +222,13 @@ func Test_executeRequest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Logf("url: %s\n", tt.args.u)
-			resp, err := sender.executeRequest(tt.args.u)
+			err := sender.executeRequest(tt.args.u)
 
 			if err != nil {
 				if !tt.wantErr {
 					t.Fatalf("executeRequest() error = %v, wantError %v", err, tt.wantErr)
 				}
 				return
-			}
-			defer resp.Body.Close()
-
-			if tt.want != nil && resp != nil {
-				if resp.StatusCode != tt.want.StatusCode {
-					t.Errorf("status: %v, want %v\n", resp.StatusCode, tt.want.StatusCode)
-				}
 			}
 		})
 	}

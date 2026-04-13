@@ -44,7 +44,8 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 }
 
 func main() {
-	log.SetFlags(log.Llongfile)
+	//log.SetFlags(log.Llongfile)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	serverAddr := ServerAddress{Host: "localhost", Port: "8080"}
 
@@ -68,7 +69,6 @@ func main() {
 			panic(err)
 		}
 	}
-	//fmt.Printf("PollInterval: %d, type: %T\n", cfg.PollInterval, cfg.PollInterval)
 	if cfg.PollInterval != nil {
 		pollSeconds = *cfg.PollInterval
 	}
