@@ -100,6 +100,8 @@ func GetByNameURL(s repository.Storage) http.HandlerFunc {
 
 func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		//res.Header().Set("Content-Type", "application/json")
+
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(req.Body)
 		defer req.Body.Close()
@@ -121,7 +123,7 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 		case models.Gauge:
 			val, err := service.GetGauge(s, metrics.ID)
 			if err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
+				http.Error(res, err.Error(), http.StatusNotFound)
 				return
 			}
 			metrics.Delta = nil
@@ -129,7 +131,7 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 		case models.Counter:
 			val, err := service.GetCounter(s, metrics.ID)
 			if err != nil {
-				http.Error(res, err.Error(), http.StatusInternalServerError)
+				http.Error(res, err.Error(), http.StatusNotFound)
 				return
 			}
 			metrics.Value = nil

@@ -1,12 +1,15 @@
 package agent
 
 import (
+	"bytes"
+	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 
+	"github.com/isBlueTip/metrics/internal/handlers"
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/sethgrid/pester"
 )
@@ -14,6 +17,59 @@ import (
 type Sender struct {
 	HC   *pester.Client
 	Addr string
+}
+
+func (s *Sender) Send(metricSet *MetricSet) error {
+	var u *url.URL
+	var err error
+
+	for k, v := range metricSet.Uints {
+		switch k {
+		case "PollCount":
+			u, err = generateURLWithParams(s.Addr, models.Counter, k, strconv.FormatUint(v, 10))
+		default:
+			u, err = generateURLWithParams(s.Addr, models.Gauge, k, strconv.FormatUint(v, 10))
+		}
+		if err != nil {
+			return err
+		}
+		err = s.executeRequest(u)
+		if err != nil {
+			return err
+		}
+	}
+	for k, v := range metricSet.Floats {
+		u, err = generateURLWithParams(s.Addr, models.Gauge, k, strconv.FormatFloat(v, 'f', 4, 64))
+		if err != nil {
+			return err
+		}
+		err = s.executeRequest(u)
+		if err != nil {
+			return err
+		}
+	}
+
+	u, err = generateURLWithParams(s.Addr, models.Gauge, "RandomValue", strconv.FormatInt(metricSet.RandomValue, 10))
+	if err != nil {
+		return err
+	}
+	err = s.executeRequest(u)
+	if err != nil {
+		return err
+	}
+
+	metricSet.Uints["PollCount"] = 0
+
+	return nil
+
+}
+
+func generateURLWithParams(host, metricType, metricName, metricVal string) (*url.URL, error) {
+	u, err := url.Parse("http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricVal)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
 }
 
 func (s *Sender) executeRequest(u *url.URL) error {
@@ -39,41 +95,63 @@ func (s *Sender) executeRequest(u *url.URL) error {
 	return err
 }
 
-func (s *Sender) Send(metricSet *MetricSet) error {
+func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	var u *url.URL
 	var err error
+	var metric handlers.Metrics
 
-	for k, v := range metricSet.Uints {
-		switch k {
-		case "PollCount":
-			u, err = generateURL(s.Addr, models.Counter, k, strconv.FormatUint(v, 10))
-		default:
-			u, err = generateURL(s.Addr, models.Gauge, k, strconv.FormatUint(v, 10))
-		}
-		if err != nil {
-			return err
-		}
-		err = s.executeRequest(u)
-		if err != nil {
-			return err
-		}
-	}
-	for k, v := range metricSet.Floats {
-		u, err = generateURL(s.Addr, models.Gauge, k, strconv.FormatFloat(v, 'f', 4, 64))
-		if err != nil {
-			return err
-		}
-		err = s.executeRequest(u)
-		if err != nil {
-			return err
-		}
-	}
-
-	u, err = generateURL(s.Addr, models.Gauge, "RandomValue", strconv.FormatInt(metricSet.RandomValue, 10))
+	u, err = generateURL(s.Addr)
 	if err != nil {
 		return err
 	}
-	err = s.executeRequest(u)
+
+	for name, val := range metricSet.Uints {
+		switch name {
+		case "PollCount":
+			ValTmp := int64(val)
+			metric = handlers.Metrics{
+				ID:    name,
+				MType: models.Counter,
+				Delta: &ValTmp,
+			}
+		default:
+			ValTmp := float64(val)
+			metric = handlers.Metrics{
+				ID:    name,
+				MType: models.Gauge,
+				Value: &ValTmp,
+			}
+		}
+		err = s.executeRequestJSON(u, metric)
+		if err != nil {
+			return err
+		}
+	}
+
+	for name, val := range metricSet.Floats {
+		metric = handlers.Metrics{
+			ID:    name,
+			MType: models.Gauge,
+			Value: &val,
+		}
+		err = s.executeRequestJSON(u, metric)
+		if err != nil {
+			return err
+		}
+	}
+
+	u, err = generateURL(s.Addr)
+	if err != nil {
+		return err
+	}
+
+	ValTmp := float64(metricSet.RandomValue)
+	metric = handlers.Metrics{
+		ID:    "RandomValue",
+		MType: models.Gauge,
+		Value: &ValTmp,
+	}
+	err = s.executeRequestJSON(u, metric)
 	if err != nil {
 		return err
 	}
@@ -84,10 +162,47 @@ func (s *Sender) Send(metricSet *MetricSet) error {
 
 }
 
-func generateURL(host, metricType, metricName, metricVal string) (*url.URL, error) {
-	u, err := url.Parse("http://" + host + "/update/" + metricType + "/" + metricName + "/" + metricVal)
+func generateURL(host string) (*url.URL, error) {
+	u, err := url.Parse("http://" + host + "/update/")
 	if err != nil {
 		return nil, err
 	}
 	return u, nil
+}
+
+func (s *Sender) executeRequestJSON(u *url.URL, metric handlers.Metrics) error {
+	body, err := json.Marshal(metric)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("sending metric: %s\n", body)
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := s.HC.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	//var buf bytes.Buffer
+	//_, err = buf.ReadFrom(req.Body)
+	//if err != nil {
+	//	return err
+	//}
+	//log.Printf("resp: %s\n", buf)
+
+	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("status: %s\n", resp.Status)
+
+	return err
 }

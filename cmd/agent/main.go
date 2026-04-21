@@ -34,7 +34,7 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 			metric.Collect()
 			log.Printf("metricSet collected: %+v\n", *metric)
 		case <-reportTicker:
-			err := sender.Send(metric)
+			err := sender.SendJSON(metric)
 			if err != nil {
 				log.Printf("non-critical error: %s\n", err)
 			}
@@ -44,7 +44,6 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 }
 
 func main() {
-	//log.SetFlags(log.Llongfile)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 
 	serverAddr := ServerAddress{Host: "localhost", Port: "8080"}

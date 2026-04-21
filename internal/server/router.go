@@ -17,9 +17,9 @@ func Router(storage repository.Storage) *chi.Mux {
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(storage))
 		r.Post("/update/{metricType}/{metricName:[a-zA-Z0-9_]+}/{metricVal}", logger.RequestLogger(handlers.UpdateURL(storage)))
-		r.Post("/update", logger.RequestLogger(handlers.UpdateJSON(storage)))
+		r.Post("/update/", logger.RequestLogger(handlers.UpdateJSON(storage)))
 		r.Get("/value/{metricType}/{metricName:[a-zA-Z0-9_]+}", logger.RequestLogger(handlers.GetByNameURL(storage)))
-		r.Post("/value", logger.RequestLogger(handlers.GetByNameJSON(storage)))
+		r.Post("/value/", logger.RequestLogger(handlers.GetByNameJSON(storage)))
 	})
 
 	return r
