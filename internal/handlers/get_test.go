@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetAllMetrics(t *testing.T) {
+func TestGetAll(t *testing.T) {
 	type args struct {
 		s      repository.Storage
 		method string
@@ -51,7 +51,7 @@ func TestGetAllMetrics(t *testing.T) {
 			}
 			router := chi.NewRouter()
 
-			handler := GetAllMetrics(tt.args.s)
+			handler := GetAll(tt.args.s)
 			router.Get("/", handler)
 
 			w := httptest.NewRecorder()
@@ -83,7 +83,7 @@ func TestGetAllMetrics(t *testing.T) {
 	}
 }
 
-func TestGetMetricByName(t *testing.T) {
+func TestGetByNameURL(t *testing.T) {
 	type args struct {
 		s      repository.Storage
 		url    string
@@ -179,7 +179,7 @@ func TestGetMetricByName(t *testing.T) {
 			}
 			router := chi.NewRouter()
 
-			handler := GetMetricByName(tt.args.s)
+			handler := GetByNameURL(tt.args.s)
 			router.Get("/value/{metricType}/{metricName}", handler)
 
 			w := httptest.NewRecorder()

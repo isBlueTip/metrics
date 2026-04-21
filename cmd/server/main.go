@@ -28,8 +28,6 @@ func run(address *ServerAddress) error {
 }
 
 func main() {
-	//log.SetFlags(log.Llongfile)
-
 	addr := ServerAddress{Host: "", Port: "8080"}
 	flag.Var(&addr, "a", "Parsing net address")
 	flag.Parse()

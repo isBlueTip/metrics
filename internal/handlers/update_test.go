@@ -88,7 +88,7 @@ func TestUpdate(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			router := chi.NewRouter()
 
-			handler := UpdateMetric(storage)
+			handler := UpdateURL(storage)
 			router.Post("/update/{metricType}/{metricName}/{metricVal}", handler)
 
 			w := httptest.NewRecorder()

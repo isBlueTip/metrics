@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -31,7 +33,7 @@ type Data struct {
 	Metrics template.HTML
 }
 
-func GetAllMetrics(s repository.Storage) http.HandlerFunc {
+func GetAll(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf []string
 		gauges := service.GetGauges(s)
@@ -64,7 +66,7 @@ func GetAllMetrics(s repository.Storage) http.HandlerFunc {
 	}
 }
 
-func GetMetricByName(s repository.Storage) http.HandlerFunc {
+func GetByNameURL(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		metricType := strings.ToLower(chi.URLParam(req, "metricType"))
 		metricName := strings.ToLower(chi.URLParam(req, "metricName"))
@@ -93,5 +95,58 @@ func GetMetricByName(s repository.Storage) http.HandlerFunc {
 			return
 		}
 		res.Write(buf)
+	}
+}
+
+func GetByNameJSON(s repository.Storage) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		var buf bytes.Buffer
+		_, err := buf.ReadFrom(req.Body)
+		defer req.Body.Close()
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var metrics Metrics
+		err = json.Unmarshal(buf.Bytes(), &metrics)
+
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		switch metrics.MType {
+		case models.Gauge:
+			val, err := service.GetGauge(s, metrics.ID)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			metrics.Delta = nil
+			metrics.Value = &val
+		case models.Counter:
+			val, err := service.GetCounter(s, metrics.ID)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			metrics.Value = nil
+			metrics.Delta = &val
+		default:
+			err = fmt.Errorf("unknown metric type: %s, expected '%s' or '%s'", metrics.MType, models.Gauge, models.Counter)
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		body, err := json.Marshal(metrics)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		res.Header().Set("Content-Type", "application/json")
+		res.Write(body)
 	}
 }
