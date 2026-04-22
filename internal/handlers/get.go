@@ -100,8 +100,6 @@ func GetByNameURL(s repository.Storage) http.HandlerFunc {
 
 func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		//res.Header().Set("Content-Type", "application/json")
-
 		var buf bytes.Buffer
 		_, err := buf.ReadFrom(req.Body)
 		defer req.Body.Close()
@@ -111,7 +109,7 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 			return
 		}
 
-		var metrics Metrics
+		var metrics models.Metrics
 		err = json.Unmarshal(buf.Bytes(), &metrics)
 
 		if err != nil {

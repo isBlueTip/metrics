@@ -3,7 +3,6 @@ package handlers
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -21,22 +20,23 @@ func UpdateURL(storage repository.Storage) http.HandlerFunc {
 		metricName := strings.ToLower(chi.URLParam(req, "metricName"))
 		metricVal := chi.URLParam(req, "metricVal")
 
-		// todo branch depending on metricType here and remove interface{}
-		parsedValue, err := ParseValue(metricType, metricVal)
-		if err != nil {
-			if errors.Is(err, strconv.ErrSyntax) {
-				http.Error(res, "invalid metric value, expected numeric", http.StatusBadRequest)
-			} else {
-				http.Error(res, err.Error(), http.StatusBadRequest)
-			}
-			return
-		}
-
 		switch metricType {
 		case models.Gauge:
-			service.UpdateGauge(storage, metricName, parsedValue.(float64))
+			parsedValue, err := strconv.ParseFloat(metricVal, 64)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusBadRequest)
+				return
+			}
+			service.UpdateGauge(storage, metricName, parsedValue)
 		case models.Counter:
-			service.UpdateCounter(storage, metricName, parsedValue.(int64))
+			parsedValue, err := strconv.ParseInt(metricVal, 10, 64)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusBadRequest)
+				return
+			}
+			service.UpdateCounter(storage, metricName, parsedValue)
+		default:
+			http.Error(res, fmt.Sprintf("unknown metric type: %s, expected '%s' or '%s'", metricType, models.Gauge, models.Counter), http.StatusBadRequest)
 		}
 
 		body := "{}"
@@ -57,7 +57,7 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 			return
 		}
 
-		var metrics Metrics
+		var metrics models.Metrics
 		err = json.Unmarshal(buf.Bytes(), &metrics)
 
 		if err != nil {

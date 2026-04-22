@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/isBlueTip/metrics/internal/handlers"
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/sethgrid/pester"
 )
@@ -98,7 +97,7 @@ func (s *Sender) executeRequest(u *url.URL) error {
 func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	var u *url.URL
 	var err error
-	var metric handlers.Metrics
+	var metric models.Metrics
 
 	u, err = generateURL(s.Addr)
 	if err != nil {
@@ -109,14 +108,14 @@ func (s *Sender) SendJSON(metricSet *MetricSet) error {
 		switch name {
 		case "PollCount":
 			ValTmp := int64(val)
-			metric = handlers.Metrics{
+			metric = models.Metrics{
 				ID:    name,
 				MType: models.Counter,
 				Delta: &ValTmp,
 			}
 		default:
 			ValTmp := float64(val)
-			metric = handlers.Metrics{
+			metric = models.Metrics{
 				ID:    name,
 				MType: models.Gauge,
 				Value: &ValTmp,
@@ -129,7 +128,7 @@ func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	}
 
 	for name, val := range metricSet.Floats {
-		metric = handlers.Metrics{
+		metric = models.Metrics{
 			ID:    name,
 			MType: models.Gauge,
 			Value: &val,
@@ -146,7 +145,7 @@ func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	}
 
 	ValTmp := float64(metricSet.RandomValue)
-	metric = handlers.Metrics{
+	metric = models.Metrics{
 		ID:    "RandomValue",
 		MType: models.Gauge,
 		Value: &ValTmp,
@@ -170,7 +169,7 @@ func generateURL(host string) (*url.URL, error) {
 	return u, nil
 }
 
-func (s *Sender) executeRequestJSON(u *url.URL, metric handlers.Metrics) error {
+func (s *Sender) executeRequestJSON(u *url.URL, metric models.Metrics) error {
 	body, err := json.Marshal(metric)
 	if err != nil {
 		return err
