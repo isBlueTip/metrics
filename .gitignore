@@ -27,3 +27,6 @@ vendor/
 
 # tests
 .tools/
+
+# opencode
+.opencode/

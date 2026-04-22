@@ -49,11 +49,17 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		res.Header().Set("Content-Type", "application/json")
 
-		decoder := json.NewDecoder(req.Body)
+		body, err := getReader(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		decoder := json.NewDecoder(body)
 		defer req.Body.Close()
 
 		var metrics models.Metrics
-		err := decoder.Decode(&metrics)
+		err = decoder.Decode(&metrics)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)

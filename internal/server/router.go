@@ -14,6 +14,7 @@ func Router(storage repository.Storage) *chi.Mux {
 	r := chi.NewRouter()
 	//r.Use(middleware.Logger)
 	//r.Use(logger.Log)
+	r.Use(GzipMiddleware)
 	r.Route("/", func(r chi.Router) {
 		r.Get("/", handlers.GetAll(storage))
 		r.Post("/update/{metricType}/{metricName:[a-zA-Z0-9_]+}/{metricVal}", logger.RequestLogger(handlers.UpdateURL(storage)))

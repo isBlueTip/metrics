@@ -2,6 +2,7 @@ package agent
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"io"
 	"log"
@@ -177,11 +178,23 @@ func (s *Sender) executeRequestJSON(u *url.URL, metric models.Metrics) error {
 
 	log.Printf("sending metric: %s\n", body)
 
-	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(body))
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	_, err = w.Write(body)
+	if err != nil {
+		return err
+	}
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), bytes.NewReader(buf.Bytes()))
 	if err != nil {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Content-Encoding", "gzip")
 
 	resp, err := s.HC.Do(req)
 	if err != nil {
