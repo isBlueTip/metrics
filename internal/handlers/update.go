@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -48,17 +47,13 @@ func UpdateURL(storage repository.Storage) http.HandlerFunc {
 
 func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		var buf bytes.Buffer
-		_, err := buf.ReadFrom(req.Body)
+		res.Header().Set("Content-Type", "application/json")
+
+		decoder := json.NewDecoder(req.Body)
 		defer req.Body.Close()
 
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-
 		var metrics models.Metrics
-		err = json.Unmarshal(buf.Bytes(), &metrics)
+		err := decoder.Decode(&metrics)
 
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
@@ -88,13 +83,11 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 			return
 		}
 
-		body, err := json.Marshal(metrics)
+		encoder := json.NewEncoder(res)
+		err = encoder.Encode(&metrics)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		res.Header().Set("Content-Type", "application/json")
-		res.Write(body)
 	}
 }

@@ -25,6 +25,7 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 		Addr: net.JoinHostPort(serverAddr.Host, serverAddr.Port),
 	}
 
+	// NOTE to reviewer: Since Go 1.23, time.Tick is safe to use and garbage collected.
 	pollTicker := time.Tick(pollInterval)
 	reportTicker := time.Tick(reportInterval)
 
@@ -80,6 +81,5 @@ func main() {
 
 	if err := run(serverAddr, pollInterval, reportInterval); err != nil {
 		log.Println(err.Error())
-		//panic(err)
 	}
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -51,7 +50,8 @@ func GetAll(s repository.Storage) http.HandlerFunc {
 		res.Header().Set("Content-Type", "text/html")
 		tmpl, err := template.New("webpage").Parse(htmlTmpl)
 		if err != nil {
-			panic(err)
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		data := Data{
@@ -61,7 +61,8 @@ func GetAll(s repository.Storage) http.HandlerFunc {
 
 		err = tmpl.Execute(res, data)
 		if err != nil {
-			panic(err)
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 }
@@ -100,18 +101,13 @@ func GetByNameURL(s repository.Storage) http.HandlerFunc {
 
 func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
-		var buf bytes.Buffer
-		_, err := buf.ReadFrom(req.Body)
+		res.Header().Set("Content-Type", "application/json")
+
+		decoder := json.NewDecoder(req.Body)
 		defer req.Body.Close()
 
-		if err != nil {
-			http.Error(res, err.Error(), http.StatusBadRequest)
-			return
-		}
-
 		var metrics models.Metrics
-		err = json.Unmarshal(buf.Bytes(), &metrics)
-
+		err := decoder.Decode(&metrics)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
@@ -140,13 +136,11 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 			return
 		}
 
-		body, err := json.Marshal(metrics)
+		encoder := json.NewEncoder(res)
+		err = encoder.Encode(metrics)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
-		res.Header().Set("Content-Type", "application/json")
-		res.Write(body)
 	}
 }

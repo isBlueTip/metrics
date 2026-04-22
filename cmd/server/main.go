@@ -23,7 +23,12 @@ func run(address *ServerAddress) error {
 
 	logger.Log.Info("Running server", zap.String("address", address.String()))
 
-	return http.ListenAndServe(addrString, mux)
+	srv := &http.Server{
+		Addr:    addrString,
+		Handler: mux,
+	}
+
+	return srv.ListenAndServe()
 
 }
 
