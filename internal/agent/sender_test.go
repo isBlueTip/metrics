@@ -67,7 +67,7 @@ func TestSender_Send(t *testing.T) {
 	}
 }
 
-func Test_generateURL(t *testing.T) {
+func Test_generateURLWithParams(t *testing.T) {
 	type args struct {
 		metricType string
 		metricName string
@@ -119,7 +119,7 @@ func Test_generateURL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := generateURL(serverAddr, tt.args.metricType, tt.args.metricName, tt.args.metricVal)
+			got, err := generateURLWithParams(serverAddr, tt.args.metricType, tt.args.metricName, tt.args.metricVal)
 
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("generateURL() error: %s, wantErr = %v\n", err, tt.wantErr)

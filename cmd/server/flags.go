@@ -3,10 +3,20 @@ package main
 import (
 	"fmt"
 	"net"
+	"time"
 )
 
 type Config struct {
-	Address *string `env:"ADDRESS"`
+	Address         *string `env:"ADDRESS"`
+	StoreInterval   *int    `env:"STORE_INTERVAL"`
+	FileStorePath   *string `env:"FILE_STORAGE_PATH"`
+	Restore        *bool   `env:"RESTORE"`
+}
+
+type StoreConfig struct {
+	Interval     time.Duration
+	FilePath     string
+	Restore      bool
 }
 
 type ServerAddress struct {

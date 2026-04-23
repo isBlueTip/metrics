@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -31,7 +32,7 @@ type Data struct {
 	Metrics template.HTML
 }
 
-func GetAllMetrics(s repository.Storage) http.HandlerFunc {
+func GetAll(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf []string
 		gauges := service.GetGauges(s)
@@ -49,7 +50,8 @@ func GetAllMetrics(s repository.Storage) http.HandlerFunc {
 		res.Header().Set("Content-Type", "text/html")
 		tmpl, err := template.New("webpage").Parse(htmlTmpl)
 		if err != nil {
-			panic(err)
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		data := Data{
@@ -59,12 +61,13 @@ func GetAllMetrics(s repository.Storage) http.HandlerFunc {
 
 		err = tmpl.Execute(res, data)
 		if err != nil {
-			panic(err)
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
 		}
 	}
 }
 
-func GetMetricByName(s repository.Storage) http.HandlerFunc {
+func GetByNameURL(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		metricType := strings.ToLower(chi.URLParam(req, "metricType"))
 		metricName := strings.ToLower(chi.URLParam(req, "metricName"))
@@ -93,5 +96,57 @@ func GetMetricByName(s repository.Storage) http.HandlerFunc {
 			return
 		}
 		res.Write(buf)
+	}
+}
+
+func GetByNameJSON(s repository.Storage) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		res.Header().Set("Content-Type", "application/json")
+
+		body, err := getReader(req)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		decoder := json.NewDecoder(body)
+		defer req.Body.Close()
+
+		var metrics models.Metrics
+		err = decoder.Decode(&metrics)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		switch metrics.MType {
+		case models.Gauge:
+			val, err := service.GetGauge(s, metrics.ID)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusNotFound)
+				return
+			}
+			metrics.Delta = nil
+			metrics.Value = &val
+		case models.Counter:
+			val, err := service.GetCounter(s, metrics.ID)
+			if err != nil {
+				http.Error(res, err.Error(), http.StatusNotFound)
+				return
+			}
+			metrics.Value = nil
+			metrics.Delta = &val
+		default:
+			err = fmt.Errorf("unknown metric type: %s, expected '%s' or '%s'", metrics.MType, models.Gauge, models.Counter)
+			http.Error(res, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		encoder := json.NewEncoder(res)
+		err = encoder.Encode(metrics)
+		if err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 }
