@@ -31,3 +31,7 @@ func GetGauges(storage repository.Storage) []models.GaugeModel {
 func GetCounters(storage repository.Storage) []models.CounterModel {
 	return storage.GetCounters()
 }
+
+func Ping(DBConn string) error {
+	return repository.Ping(DBConn)
+}
