@@ -20,7 +20,7 @@ func Router(storage repository.Storage, DBConn string) *chi.Mux {
 		r.Post("/update/", logger.RequestLogger(handlers.UpdateJSON(storage)))
 		r.Get("/value/{metricType}/{metricName:[a-zA-Z0-9_]+}", logger.RequestLogger(handlers.GetByNameURL(storage)))
 		r.Post("/value/", logger.RequestLogger(handlers.GetByNameJSON(storage)))
-		r.Get("/ping", logger.RequestLogger(handlers.PingDB(DBConn)))
+		r.Get("/ping", logger.RequestLogger(handlers.Ping(storage)))
 	})
 
 	return r

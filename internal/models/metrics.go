@@ -28,11 +28,6 @@ type CounterModel struct {
 	Value int64
 }
 
-type URLMetric struct {
-	Type, Name string
-	Value      interface{}
-}
-
 type Metrics struct {
 	ID    string   `json:"id"`
 	MType string   `json:"type"`

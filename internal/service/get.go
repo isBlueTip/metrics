@@ -24,14 +24,14 @@ func GetCounter(storage repository.Storage, name string) (val int64, err error) 
 	return
 }
 
-func GetGauges(storage repository.Storage) []models.GaugeModel {
+func GetGauges(storage repository.Storage) ([]models.GaugeModel, error) {
 	return storage.GetGauges()
 }
 
-func GetCounters(storage repository.Storage) []models.CounterModel {
+func GetCounters(storage repository.Storage) ([]models.CounterModel, error) {
 	return storage.GetCounters()
 }
 
-func Ping(DBConn string) error {
-	return repository.Ping(DBConn)
+func Ping(storage repository.Storage) error {
+	return storage.Ping()
 }

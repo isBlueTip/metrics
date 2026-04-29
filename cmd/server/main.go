@@ -21,21 +21,37 @@ const (
 	DefaultStoreInterval   = 300
 	DefaultFileStoragePath = "/tmp/metrics-db.json"
 	DefaultRestore         = true
-	DefaultDB              = "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
 )
 
 func run(address *ServerAddress, storeCfg StoreConfig) error {
-	if err := logger.Initialize("info"); err != nil {
+	var err error
+	//if err = logger.Initialize("info"); err != nil {
+	if err = logger.Initialize("debug"); err != nil {
 		panic(err)
 	}
 
-	storage := repository.NewStorage()
-
-	if storeCfg.Restore && storeCfg.FilePath != "" {
-		if err := storage.LoadFromFile(storeCfg.FilePath); err == nil {
-			logger.Log.Info("Restored metrics from file", zap.String("path", storeCfg.FilePath))
+	var storage repository.Storage
+	if storeCfg.DB != "" || &storeCfg.DB != nil {
+		storage, err = repository.NewDBStorage(storeCfg.DB)
+		if err != nil {
+			logger.Log.Warn("Can't connect to DB", zap.String("db", err.Error()))
+			if storeCfg.FilePath != "" {
+				storage = repository.NewFileStorage(storeCfg.FilePath)
+			} else {
+				storage = repository.NewMemStorage()
+			}
 		}
+	} else if storeCfg.FilePath != "" {
+		storage = repository.NewFileStorage(storeCfg.FilePath)
+	} else {
+		storage = repository.NewMemStorage()
 	}
+
+	//if storeCfg.Restore && storeCfg.FilePath != "" {
+	//	if err := storage.LoadFromFile(storeCfg.FilePath); err == nil {
+	//		logger.Log.Info("Restored metrics from file", zap.String("path", storeCfg.FilePath))
+	//	}
+	//}
 
 	mux := server.Router(storage, storeCfg.DB)
 
@@ -52,11 +68,11 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 		if storeCfg.FilePath != "" && storeCfg.Interval > 0 {
 			ticker := time.NewTicker(storeCfg.Interval)
 			defer ticker.Stop()
-			for range ticker.C {
-				if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
-					logger.Log.Info("Metrics saved to file", zap.String("path", storeCfg.FilePath))
-				}
-			}
+			//for range ticker.C {
+			//	if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
+			//		logger.Log.Info("Metrics saved to file", zap.String("path", storeCfg.FilePath))
+			//	}
+			//}
 		}
 	}()
 
@@ -70,11 +86,11 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	if storeCfg.FilePath != "" {
-		if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
-			logger.Log.Info("Metrics saved on shutdown", zap.String("path", storeCfg.FilePath))
-		}
-	}
+	//if storeCfg.FilePath != "" {
+	//	if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
+	//		logger.Log.Info("Metrics saved on shutdown", zap.String("path", storeCfg.FilePath))
+	//	}
+	//}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -88,7 +104,7 @@ func main() {
 	storeInterval := flag.Int("i", DefaultStoreInterval, "Store interval in seconds")
 	fileStoragePath := flag.String("f", DefaultFileStoragePath, "File storage path")
 	restore := flag.Bool("r", DefaultRestore, "Restore metrics on startup")
-	dbString := flag.String("d", DefaultDB, "DB connection string")
+	dbString := flag.String("d", "", "DB connection string")
 
 	flag.Parse()
 
@@ -108,7 +124,7 @@ func main() {
 		Interval: time.Duration(DefaultStoreInterval) * time.Second,
 		FilePath: DefaultFileStoragePath,
 		Restore:  DefaultRestore,
-		DB:       DefaultDB,
+		DB:       "",
 	}
 
 	if envCfg.StoreInterval != nil {
