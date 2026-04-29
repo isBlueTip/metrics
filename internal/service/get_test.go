@@ -6,6 +6,7 @@ import (
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/isBlueTip/metrics/internal/repository"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetGauge(t *testing.T) {
@@ -23,7 +24,7 @@ func TestGetGauge(t *testing.T) {
 		{
 			name: "1 positive",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 				name:    "metric_1",
 			},
 			setup: func(s repository.Storage) {
@@ -35,7 +36,7 @@ func TestGetGauge(t *testing.T) {
 		{
 			name: "2 negative",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 				name:    "metric_1",
 			},
 			wantErr: true,
@@ -75,7 +76,7 @@ func TestGetCounter(t *testing.T) {
 		{
 			name: "1 positive",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 				name:    "metric_1",
 			},
 			setup: func(s repository.Storage) {
@@ -87,7 +88,7 @@ func TestGetCounter(t *testing.T) {
 		{
 			name: "2 negative",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 				name:    "metric_1",
 			},
 			wantErr: true,
@@ -117,15 +118,16 @@ func TestGetGauges(t *testing.T) {
 		storage repository.Storage
 	}
 	tests := []struct {
-		name  string
-		args  args
-		setup func(s repository.Storage)
-		want  []models.GaugeModel
+		name    string
+		args    args
+		setup   func(s repository.Storage)
+		want    []models.GaugeModel
+		wantErr bool
 	}{
 		{
 			name: "1 positive",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 			},
 			setup: func(s repository.Storage) {
 				s.SetGauge("metric1", 15.2)
@@ -139,11 +141,12 @@ func TestGetGauges(t *testing.T) {
 				{Name: "metric3", Value: 1569.2},
 				{Name: "metric4", Value: 155683.2},
 			},
+			wantErr: false,
 		},
 		{
 			name: "2 positive",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 			},
 			want: nil,
 		},
@@ -154,7 +157,10 @@ func TestGetGauges(t *testing.T) {
 				tt.setup(tt.args.storage)
 			}
 
-			got := GetGauges(tt.args.storage)
+			got, err := GetGauges(tt.args.storage)
+			if tt.wantErr {
+				require.Error(t, err, "GetGauges() err: %v, wantErr %t", err, tt.wantErr)
+			}
 			assert.ElementsMatch(t, got, tt.want, "GetGauges() = %v, want %v", got, tt.want)
 		})
 	}
@@ -165,15 +171,16 @@ func TestGetCounters(t *testing.T) {
 		storage repository.Storage
 	}
 	tests := []struct {
-		name  string
-		args  args
-		setup func(s repository.Storage)
-		want  []models.CounterModel
+		name    string
+		args    args
+		setup   func(s repository.Storage)
+		want    []models.CounterModel
+		wantErr bool
 	}{
 		{
 			name: "1 positive",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 			},
 			setup: func(s repository.Storage) {
 				s.SetCounter("metric1", 15)
@@ -188,11 +195,12 @@ func TestGetCounters(t *testing.T) {
 				{Name: "metric3", Value: 1569},
 				{Name: "metric4", Value: 155683},
 			},
+			wantErr: false,
 		},
 		{
 			name: "2 positive",
 			args: args{
-				storage: repository.NewStorage(),
+				storage: repository.NewMemStorage(),
 			},
 			setup: func(s repository.Storage) {
 
@@ -206,7 +214,10 @@ func TestGetCounters(t *testing.T) {
 				tt.setup(tt.args.storage)
 			}
 
-			got := GetCounters(tt.args.storage)
+			got, err := GetCounters(tt.args.storage)
+			if tt.wantErr {
+				require.Error(t, err, "GetCounters() err: %v, wantErr %t", err, tt.wantErr)
+			}
 			assert.ElementsMatch(t, got, tt.want, "GetCounters() = %v, want %v", got, tt.want)
 		})
 	}

@@ -31,7 +31,7 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 	}
 
 	var storage repository.Storage
-	if storeCfg.DB != "" || &storeCfg.DB != nil {
+	if storeCfg.DB != "" {
 		storage, err = repository.NewDBStorage(storeCfg.DB)
 		if err != nil {
 			logger.Log.Warn("Can't connect to DB", zap.String("db", err.Error()))
