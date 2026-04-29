@@ -8,9 +8,11 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/isBlueTip/metrics/internal/logger"
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/isBlueTip/metrics/internal/repository"
 	"github.com/isBlueTip/metrics/internal/service"
+	"go.uber.org/zap"
 )
 
 func UpdateURL(storage repository.Storage) http.HandlerFunc {
@@ -26,16 +28,31 @@ func UpdateURL(storage repository.Storage) http.HandlerFunc {
 				http.Error(res, err.Error(), http.StatusBadRequest)
 				return
 			}
-			service.UpdateGauge(storage, metricName, parsedValue)
+			logger.Log.Debug(fmt.Sprintf("storage type: %+v\n", storage))
+			err = service.UpdateGauge(storage, metricName, parsedValue)
+			if err != nil {
+				logger.Log.Error("updating error", zap.String("handler", err.Error()))
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			logger.Log.Debug("gauge updated")
 		case models.Counter:
 			parsedValue, err := strconv.ParseInt(metricVal, 10, 64)
 			if err != nil {
 				http.Error(res, err.Error(), http.StatusBadRequest)
 				return
 			}
-			service.UpdateCounter(storage, metricName, parsedValue)
+			err = service.UpdateCounter(storage, metricName, parsedValue)
+			if err != nil {
+				logger.Log.Error("updating error", zap.String("handler", err.Error()))
+				http.Error(res, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		default:
-			http.Error(res, fmt.Sprintf("unknown metric type: %s, expected '%s' or '%s'", metricType, models.Gauge, models.Counter), http.StatusBadRequest)
+			http.Error(res, fmt.Sprintf(
+				"unknown metric type: %s, expected '%s' or '%s'",
+				metricType, models.Gauge, models.Counter), http.StatusBadRequest,
+			)
 		}
 
 		body := "{}"
@@ -84,7 +101,8 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 			metrics.Value = nil
 			service.UpdateCounter(storage, metrics.ID, *metrics.Delta)
 		default:
-			err = fmt.Errorf("unknown metric type: %s, expected '%s' or '%s'", metrics.MType, models.Gauge, models.Counter)
+			err = fmt.Errorf("unknown metric type: %s, expected '%s' or '%s'",
+				metrics.MType, models.Gauge, models.Counter)
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}

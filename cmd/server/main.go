@@ -24,11 +24,32 @@ const (
 )
 
 func run(address *ServerAddress, storeCfg StoreConfig) error {
-	if err := logger.Initialize("info"); err != nil {
+	var err error
+	//if err = logger.Initialize("info"); err != nil {
+	if err = logger.Initialize("debug"); err != nil {
 		panic(err)
 	}
 
-	storage := repository.NewStorage()
+	var storage repository.Storage
+	if storeCfg.DB != "" {
+		storage, err = repository.NewDBStorage(storeCfg.DB)
+		if err != nil {
+			logger.Log.Warn("Can't connect to DB", zap.String("db", err.Error()))
+			if storeCfg.FilePath != "" {
+				storage = repository.NewFileStorage(storeCfg.FilePath)
+			} else {
+				storage = repository.NewMemStorage()
+			}
+		}
+	} else if storeCfg.FilePath != "" {
+		storage = repository.NewFileStorage(storeCfg.FilePath)
+	} else {
+		storage = repository.NewMemStorage()
+	}
+
+	if storeCfg.FilePath != "" && storeCfg.Interval == 0 {
+		storage = repository.NewSyncStorage(storage, storeCfg.FilePath)
+	}
 
 	if storeCfg.Restore && storeCfg.FilePath != "" {
 		if err := storage.LoadFromFile(storeCfg.FilePath); err == nil {
@@ -36,7 +57,7 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 		}
 	}
 
-	mux := server.Router(storage)
+	mux := server.Router(storage, storeCfg.DB)
 
 	addrString := net.JoinHostPort(address.Host, address.Port)
 
@@ -87,47 +108,56 @@ func main() {
 	storeInterval := flag.Int("i", DefaultStoreInterval, "Store interval in seconds")
 	fileStoragePath := flag.String("f", DefaultFileStoragePath, "File storage path")
 	restore := flag.Bool("r", DefaultRestore, "Restore metrics on startup")
+	dbString := flag.String("d", "", "DB connection string")
 
 	flag.Parse()
 
-	var cfg Config
+	var envCfg EnvConfig
 
-	if err := env.Parse(&cfg); err != nil {
+	if err := env.Parse(&envCfg); err != nil {
 		panic(err)
 	}
 
-	if cfg.Address != nil {
-		if err := addr.Set(*cfg.Address); err != nil {
+	if envCfg.Address != nil {
+		if err := addr.Set(*envCfg.Address); err != nil {
 			panic(err)
 		}
 	}
 
 	storeCfg := StoreConfig{
-		Interval:  time.Duration(DefaultStoreInterval) * time.Second,
+		Interval: time.Duration(DefaultStoreInterval) * time.Second,
 		FilePath: DefaultFileStoragePath,
-		Restore: DefaultRestore,
+		Restore:  DefaultRestore,
+		DB:       "",
 	}
 
-	if cfg.StoreInterval != nil {
-		storeCfg.Interval = time.Duration(*cfg.StoreInterval) * time.Second
+	if envCfg.StoreInterval != nil {
+		storeCfg.Interval = time.Duration(*envCfg.StoreInterval) * time.Second
 	} else {
 		storeCfg.Interval = time.Duration(*storeInterval) * time.Second
 	}
 
-	if cfg.FileStorePath != nil {
-		storeCfg.FilePath = *cfg.FileStorePath
+	if envCfg.FileStorePath != nil {
+		storeCfg.FilePath = *envCfg.FileStorePath
 	} else {
 		storeCfg.FilePath = *fileStoragePath
 	}
 
-	if cfg.Restore != nil {
-		storeCfg.Restore = *cfg.Restore
+	if envCfg.Restore != nil {
+		storeCfg.Restore = *envCfg.Restore
 	} else {
 		storeCfg.Restore = *restore
 	}
 
 	if storeCfg.FilePath == "" {
 		storeCfg.Interval = 0
+		storeCfg.Restore = false
+	}
+
+	if envCfg.DB != nil {
+		storeCfg.DB = *envCfg.DB
+	} else {
+		storeCfg.DB = *dbString
 	}
 
 	if err := run(&addr, storeCfg); err != nil {
