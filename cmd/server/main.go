@@ -47,11 +47,15 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 		storage = repository.NewMemStorage()
 	}
 
-	//if storeCfg.Restore && storeCfg.FilePath != "" {
-	//	if err := storage.LoadFromFile(storeCfg.FilePath); err == nil {
-	//		logger.Log.Info("Restored metrics from file", zap.String("path", storeCfg.FilePath))
-	//	}
-	//}
+	if storeCfg.FilePath != "" && storeCfg.Interval == 0 {
+		storage = repository.NewSyncStorage(storage, storeCfg.FilePath)
+	}
+
+	if storeCfg.Restore && storeCfg.FilePath != "" {
+		if err := storage.LoadFromFile(storeCfg.FilePath); err == nil {
+			logger.Log.Info("Restored metrics from file", zap.String("path", storeCfg.FilePath))
+		}
+	}
 
 	mux := server.Router(storage, storeCfg.DB)
 
@@ -68,11 +72,11 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 		if storeCfg.FilePath != "" && storeCfg.Interval > 0 {
 			ticker := time.NewTicker(storeCfg.Interval)
 			defer ticker.Stop()
-			//for range ticker.C {
-			//	if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
-			//		logger.Log.Info("Metrics saved to file", zap.String("path", storeCfg.FilePath))
-			//	}
-			//}
+			for range ticker.C {
+				if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
+					logger.Log.Info("Metrics saved to file", zap.String("path", storeCfg.FilePath))
+				}
+			}
 		}
 	}()
 
@@ -86,11 +90,11 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 
-	//if storeCfg.FilePath != "" {
-	//	if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
-	//		logger.Log.Info("Metrics saved on shutdown", zap.String("path", storeCfg.FilePath))
-	//	}
-	//}
+	if storeCfg.FilePath != "" {
+		if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
+			logger.Log.Info("Metrics saved on shutdown", zap.String("path", storeCfg.FilePath))
+		}
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -147,6 +151,7 @@ func main() {
 
 	if storeCfg.FilePath == "" {
 		storeCfg.Interval = 0
+		storeCfg.Restore = false
 	}
 
 	if envCfg.DB != nil {
