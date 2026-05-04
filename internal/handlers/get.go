@@ -120,9 +120,9 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
+		defer body.Close()
 
 		decoder := json.NewDecoder(body)
-		defer req.Body.Close()
 
 		var metrics models.Update
 		err = decoder.Decode(&metrics)
@@ -153,6 +153,8 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
+
+		res.WriteHeader(http.StatusOK)
 
 		encoder := json.NewEncoder(res)
 		err = encoder.Encode(metrics)

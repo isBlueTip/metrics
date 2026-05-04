@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func getReader(req *http.Request) (io.Reader, error) {
+func getReader(req *http.Request) (io.ReadCloser, error) {
 	if req.Header.Get("Content-Encoding") != "gzip" {
 		return req.Body, nil
 	}

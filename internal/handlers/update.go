@@ -71,10 +71,9 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
+		defer body.Close()
 
 		decoder := json.NewDecoder(body)
-		defer req.Body.Close()
-
 		var metric models.Update
 		err = decoder.Decode(&metric)
 
@@ -136,64 +135,51 @@ func UpdateBatch(storage repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
+		defer body.Close()
 
 		decoder := json.NewDecoder(body)
-		defer req.Body.Close()
 
-		metrics := make([]models.Update, 0)
-		_, err = decoder.Token()
+		var metrics []models.Update
+		err = decoder.Decode(&metrics)
 		if err != nil {
-			logger.Log.Error("updating error", zap.String("handler", err.Error()))
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			logger.Log.Error("decoding error", zap.String("handler", err.Error()))
+			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		for decoder.More() {
-			var metric models.Update
-
-			if err = decoder.Decode(&metric); err != nil {
-				logger.Log.Error("updating error", zap.String("handler", err.Error()))
-				http.Error(res, err.Error(), http.StatusInternalServerError)
-				return
-			}
-
+		validMetrics := make([]models.Update, 0, len(metrics))
+		for _, metric := range metrics {
 			switch metric.MType {
 			case models.Gauge:
 				if metric.Value == nil {
-					err = fmt.Errorf("no value provided")
-					http.Error(res, err.Error(), http.StatusBadRequest)
+					http.Error(res, "no value provided for gauge", http.StatusBadRequest)
 					return
 				}
-				metrics = append(metrics, metric)
+				validMetrics = append(validMetrics, metric)
 			case models.Counter:
 				if metric.Delta == nil {
-					err = fmt.Errorf("no delta provided")
-					http.Error(res, err.Error(), http.StatusBadRequest)
+					http.Error(res, "no delta provided for counter", http.StatusBadRequest)
 					return
 				}
-				metrics = append(metrics, metric)
+				validMetrics = append(validMetrics, metric)
+			default:
+				http.Error(res, "unknown metric type", http.StatusBadRequest)
+				return
 			}
 		}
 
-		_, err = decoder.Token()
+		err = service.UpdateBatch(storage, validMetrics)
 		if err != nil {
 			logger.Log.Error("updating error", zap.String("handler", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		err = service.UpdateBatch(storage, metrics)
-		if err != nil {
-			logger.Log.Error("updating error", zap.String("handler", err.Error()))
-			http.Error(res, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
+		res.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(res)
-		err = encoder.Encode(&metrics)
+		err = encoder.Encode(metrics)
 		if err != nil {
-			logger.Log.Error("updating error", zap.String("handler", err.Error()))
-			http.Error(res, err.Error(), http.StatusInternalServerError)
+			logger.Log.Error("encoding error", zap.String("handler", err.Error()))
 			return
 		}
 	}

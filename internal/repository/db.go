@@ -3,14 +3,28 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"errors"
 	"os"
 	"time"
 
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+func isRetryableError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		return pgErr.Code[:2] == "08"
+	}
+
+	return false
+}
 
 type DBStorage struct {
 	Pool *pgxpool.Pool
@@ -18,28 +32,49 @@ type DBStorage struct {
 }
 
 func (s *DBStorage) SetGauge(name string, val float64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
+	var err error
+	for i := 0; i < 4; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 
-	sql := "INSERT INTO GAUGES (NAME, VALUE)" +
-		"VALUES ($1, $2)" +
-		"ON CONFLICT (NAME) DO UPDATE " +
-		"SET VALUE = EXCLUDED.VALUE;"
+		sql := "INSERT INTO GAUGES (NAME, VALUE)" +
+			"VALUES ($1, $2)" +
+			"ON CONFLICT (NAME) DO UPDATE " +
+			"SET VALUE = EXCLUDED.VALUE;"
 
-	_, err := s.Pool.Exec(ctx, sql, name, val)
+		_, err = s.Pool.Exec(ctx, sql, name, val)
+		cancel()
+
+		if err == nil || !isRetryableError(err) {
+			return err
+		}
+		if i < 3 {
+			time.Sleep(time.Duration(i*2+1) * time.Second)
+		}
+	}
 	return err
 }
 
 func (s *DBStorage) SetCounter(name string, val int64) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-	defer cancel()
+	var err error
+	for i := 0; i < 4; i++ {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 
-	sql := "INSERT INTO COUNTERS (NAME, VALUE)" +
-		"VALUES ($1, $2)" +
-		"ON CONFLICT (NAME) DO UPDATE " +
-		"SET VALUE = EXCLUDED.VALUE;"
+		sql := "INSERT INTO COUNTERS (NAME, VALUE)" +
+			"VALUES ($1, $2)" +
+			"ON CONFLICT (NAME) DO UPDATE " +
+			"SET " +
+			"VALUE = COUNTERS.VALUE + EXCLUDED.VALUE;"
 
-	_, err := s.Pool.Exec(ctx, sql, name, val)
+		_, err = s.Pool.Exec(ctx, sql, name, val)
+		cancel()
+
+		if err == nil || !isRetryableError(err) {
+			return err
+		}
+		if i < 3 {
+			time.Sleep(time.Duration(i*2+1) * time.Second)
+		}
+	}
 	return err
 }
 
@@ -108,13 +143,12 @@ func (s *DBStorage) GetGauges() (res []models.GaugeModel, err error) {
 }
 
 func (s *DBStorage) GetCounters() (res []models.CounterModel, err error) {
-	gauges := make([]models.CounterModel, 0)
+	counters := make([]models.CounterModel, 0)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
 	defer cancel()
 
-	sql := "SELECT name, value " +
-		"FROM COUNTERS;"
+	sql := "SELECT name, value FROM COUNTERS;"
 
 	rows, err := s.Pool.Query(ctx, sql)
 	if err != nil {
@@ -127,10 +161,10 @@ func (s *DBStorage) GetCounters() (res []models.CounterModel, err error) {
 		if err != nil {
 			return nil, err
 		}
-		gauges = append(gauges, c)
+		counters = append(counters, c)
 	}
 
-	return gauges, nil
+	return counters, nil
 }
 
 func (s *DBStorage) Ping() error {
@@ -195,7 +229,11 @@ func (s *DBStorage) LoadFromFile(path string) error {
 	defer cancel()
 
 	for k, v := range data.Gauge {
-		sql := "INSERT INTO GAUGES (NAME, VALUE) VALUES ($1, $2) ON CONFLICT (NAME) DO UPDATE SET VALUE = EXCLUDED.VALUE;"
+		sql := "INSERT INTO GAUGES (NAME, VALUE) " +
+			"VALUES ($1, $2) " +
+			"ON CONFLICT (NAME) DO UPDATE " +
+			"SET " +
+			"VALUE = EXCLUDED.VALUE;"
 		_, err := s.Pool.Exec(ctx, sql, k, v)
 		if err != nil {
 			return err
@@ -203,7 +241,11 @@ func (s *DBStorage) LoadFromFile(path string) error {
 	}
 
 	for k, v := range data.Counter {
-		sql := "INSERT INTO COUNTERS (NAME, VALUE) VALUES ($1, $2) ON CONFLICT (NAME) DO UPDATE SET VALUE = EXCLUDED.VALUE;"
+		sql := "INSERT INTO COUNTERS (NAME, VALUE) " +
+			"VALUES ($1, $2) " +
+			"ON CONFLICT (NAME) DO UPDATE " +
+			"SET " +
+			"VALUE = COUNTERS.VALUE + EXCLUDED.VALUE;"
 		_, err := s.Pool.Exec(ctx, sql, k, v)
 		if err != nil {
 			return err
@@ -214,7 +256,6 @@ func (s *DBStorage) LoadFromFile(path string) error {
 }
 
 func (s *DBStorage) UpdateBatch(metrics []models.Update) error {
-	var err error
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 
@@ -229,24 +270,23 @@ func (s *DBStorage) UpdateBatch(metrics []models.Update) error {
 		case models.Gauge:
 			if m.Value != nil {
 				sql := "INSERT INTO GAUGES (NAME, VALUE) " +
-					"VALUES (@name, @value) " +
+					"VALUES ($1, $2) " +
 					"ON CONFLICT (NAME) DO UPDATE " +
 					"SET " +
 					"VALUE = EXCLUDED.VALUE;"
-				_, err = tx.Exec(ctx, sql, pgx.NamedArgs{"name": m.ID, "value": *m.Value})
+				_, err = tx.Exec(ctx, sql, m.ID, *m.Value)
 				if err != nil {
 					return err
 				}
 			}
 		case models.Counter:
-			log.Printf("metric: %+v\n", m)
 			if m.Delta != nil {
 				sql := "INSERT INTO COUNTERS (NAME, VALUE) " +
-					"VALUES (@name, @value) " +
+					"VALUES ($1, $2) " +
 					"ON CONFLICT (NAME) DO UPDATE " +
 					"SET " +
 					"VALUE = COUNTERS.VALUE + EXCLUDED.VALUE;"
-				_, err = tx.Exec(ctx, sql, pgx.NamedArgs{"name": m.ID, "value": *m.Delta})
+				_, err = tx.Exec(ctx, sql, m.ID, *m.Delta)
 				if err != nil {
 					return err
 				}
@@ -282,9 +322,9 @@ func NewDBStorage(connString string) (*DBStorage, error) {
 }
 
 func (s *DBStorage) initTables(ctx context.Context) error {
-	gaugesSQL := "CREATE TABLE IF NOT EXISTS gauges(" +
-		"\"name\" TEXT PRIMARY KEY," +
-		"\"value\" FLOAT);"
+	gaugesSQL := `CREATE TABLE IF NOT EXISTS gauges(` +
+		`"name" TEXT PRIMARY KEY,` +
+		`"value" FLOAT);`
 
 	_, err := s.Pool.Exec(ctx, gaugesSQL)
 
@@ -292,9 +332,9 @@ func (s *DBStorage) initTables(ctx context.Context) error {
 		return err
 	}
 
-	countersSQL := "CREATE TABLE IF NOT EXISTS counters(" +
-		"\"name\" TEXT PRIMARY KEY," +
-		"\"value\" INTEGER);"
+	countersSQL := `CREATE TABLE IF NOT EXISTS counters(` +
+		`"name" TEXT PRIMARY KEY,` +
+		`"value" INTEGER);`
 
 	_, err = s.Pool.Exec(ctx, countersSQL)
 
