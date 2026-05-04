@@ -212,6 +212,51 @@ func (s *DBStorage) LoadFromFile(path string) error {
 	return nil
 }
 
+func (s *DBStorage) UpdateBatch(metrics []models.Update) error {
+	ctx := context.Background()
+
+	tx, err := s.Pool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	sqlGauge := "INSERT INTO GAUGES (NAME, VALUE) " +
+		"VALUES (@name, @value) " +
+		"ON CONFLICT (NAME) DO UPDATE " +
+		"SET " +
+		"VALUE = EXCLUDED.VALUE;"
+
+	//stmtGauge, err := tx.Prepare(ctx, "upsert_gauge", sqlGauge)
+	//if err != nil {
+	//	return err
+	//}
+
+	sqlCounter := "INSERT INTO COUNTERS (NAME, VALUE) " +
+		"VALUES (@name, @value) " +
+		"ON CONFLICT (NAME) DO UPDATE " +
+		"SET " +
+		"VALUE = EXCLUDED.VALUE;"
+
+	//stmtCounter, err := tx.Prepare(ctx, "upsert_counter", sqlCounter)
+	//if err != nil {
+	//	return err
+	//}
+
+	for _, metric := range metrics {
+		if metric.MType == models.Gauge {
+			_, err = tx.Exec(ctx, sqlGauge, pgx.NamedArgs{"name": metric.ID, "value": *metric.Value})
+
+		} else if metric.MType == models.Counter {
+			_, err = tx.Exec(ctx, sqlCounter, pgx.NamedArgs{"name": metric.ID, "value": *metric.Delta})
+		}
+		if err != nil {
+			tx.Rollback(ctx)
+			return err
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 func NewDBStorage(connString string) (*DBStorage, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*7)
 	defer cancel()
@@ -220,7 +265,13 @@ func NewDBStorage(connString string) (*DBStorage, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := DBStorage{Pool: pool}
+
+	conn, err := pgx.Connect(ctx, connString)
+	if err != nil {
+		return nil, err
+	}
+
+	s := DBStorage{Pool: pool, Conn: conn}
 
 	err = s.initTables(ctx)
 	if err != nil {

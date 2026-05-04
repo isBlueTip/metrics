@@ -74,7 +74,7 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 			defer ticker.Stop()
 			for range ticker.C {
 				if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
-					logger.Log.Info("Metrics saved to file", zap.String("path", storeCfg.FilePath))
+					logger.Log.Info("Metric saved to file", zap.String("path", storeCfg.FilePath))
 				}
 			}
 		}
@@ -92,7 +92,7 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 
 	if storeCfg.FilePath != "" {
 		if err := storage.SaveToFile(storeCfg.FilePath); err == nil {
-			logger.Log.Info("Metrics saved on shutdown", zap.String("path", storeCfg.FilePath))
+			logger.Log.Info("Metric saved on shutdown", zap.String("path", storeCfg.FilePath))
 		}
 	}
 

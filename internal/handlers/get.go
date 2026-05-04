@@ -124,7 +124,7 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 		decoder := json.NewDecoder(body)
 		defer req.Body.Close()
 
-		var metrics models.Metrics
+		var metrics models.Update
 		err = decoder.Decode(&metrics)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)

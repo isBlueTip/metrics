@@ -120,6 +120,22 @@ func (s *FileStorage) LoadFromFile(path string) error {
 	return nil
 }
 
+func (s *FileStorage) UpdateBatch(metrics []models.Update) error {
+	var err error
+	for _, metric := range metrics {
+		if metric.MType == models.Gauge {
+			err = s.SetGauge(metric.ID, *metric.Value)
+
+		} else if metric.MType == models.Counter {
+			err = s.SetCounter(metric.ID, *metric.Delta)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func NewFileStorage(path string) *FileStorage {
 	return &FileStorage{gauge: make(map[string]float64), counter: make(map[string]int64), path: path}
 }

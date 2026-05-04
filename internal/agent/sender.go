@@ -98,7 +98,7 @@ func (s *Sender) executeRequest(u *url.URL) error {
 func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	var u *url.URL
 	var err error
-	var metric models.Metrics
+	var metric models.Update
 
 	u, err = generateURL(s.Addr)
 	if err != nil {
@@ -109,14 +109,14 @@ func (s *Sender) SendJSON(metricSet *MetricSet) error {
 		switch name {
 		case "PollCount":
 			ValTmp := int64(val)
-			metric = models.Metrics{
+			metric = models.Update{
 				ID:    name,
 				MType: models.Counter,
 				Delta: &ValTmp,
 			}
 		default:
 			ValTmp := float64(val)
-			metric = models.Metrics{
+			metric = models.Update{
 				ID:    name,
 				MType: models.Gauge,
 				Value: &ValTmp,
@@ -129,7 +129,7 @@ func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	}
 
 	for name, val := range metricSet.Floats {
-		metric = models.Metrics{
+		metric = models.Update{
 			ID:    name,
 			MType: models.Gauge,
 			Value: &val,
@@ -146,7 +146,7 @@ func (s *Sender) SendJSON(metricSet *MetricSet) error {
 	}
 
 	ValTmp := float64(metricSet.RandomValue)
-	metric = models.Metrics{
+	metric = models.Update{
 		ID:    "RandomValue",
 		MType: models.Gauge,
 		Value: &ValTmp,
@@ -170,7 +170,7 @@ func generateURL(host string) (*url.URL, error) {
 	return u, nil
 }
 
-func (s *Sender) executeRequestJSON(u *url.URL, metric models.Metrics) error {
+func (s *Sender) executeRequestJSON(u *url.URL, metric models.Update) error {
 	body, err := json.Marshal(metric)
 	if err != nil {
 		return err

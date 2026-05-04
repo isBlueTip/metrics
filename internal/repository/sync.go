@@ -54,6 +54,22 @@ func (s *SyncStorage) LoadFromFile(path string) error {
 	return s.storage.LoadFromFile(path)
 }
 
+func (s *SyncStorage) UpdateBatch(metrics []models.Update) error {
+	var err error
+	for _, metric := range metrics {
+		if metric.MType == models.Gauge {
+			err = s.SetGauge(metric.ID, *metric.Value)
+
+		} else if metric.MType == models.Counter {
+			err = s.SetCounter(metric.ID, *metric.Delta)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func NewSyncStorage(storage Storage, filePath string) *SyncStorage {
 	return &SyncStorage{storage: storage, filePath: filePath}
 }

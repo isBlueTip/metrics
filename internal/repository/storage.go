@@ -11,6 +11,7 @@ type Storage interface {
 	GetCounter(name string) (val int64, exists bool)
 	GetGauges() (val []models.GaugeModel, err error)
 	GetCounters() (val []models.CounterModel, err error)
+	UpdateBatch(metrics []models.Update) error
 	Ping() error
 	SaveToFile(path string) error
 	LoadFromFile(path string) error
