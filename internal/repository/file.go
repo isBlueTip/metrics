@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"sync"
 
@@ -71,10 +72,10 @@ func (s *FileStorage) GetCounters() (res []models.CounterModel, err error) {
 }
 
 func (s *FileStorage) Ping() error {
-	return nil
+	return errors.New("wrong storage")
 }
 
-func (s *FileStorage) SaveToFile() error {
+func (s *FileStorage) SaveToFile(path string) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -83,7 +84,7 @@ func (s *FileStorage) SaveToFile() error {
 		Counter: s.counter,
 	}
 
-	file, err := os.Create(s.path)
+	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
@@ -93,8 +94,8 @@ func (s *FileStorage) SaveToFile() error {
 	return encoder.Encode(data)
 }
 
-func (s *FileStorage) LoadFromFile() error {
-	file, err := os.Open(s.path)
+func (s *FileStorage) LoadFromFile(path string) error {
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}

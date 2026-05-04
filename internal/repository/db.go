@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"time"
 
 	"github.com/isBlueTip/metrics/internal/models"
@@ -137,6 +139,77 @@ func (s *DBStorage) Ping() error {
 	err := s.Pool.Ping(ctx)
 
 	return err
+}
+
+func (s *DBStorage) SaveToFile(path string) error {
+	gauges, err := s.GetGauges()
+	if err != nil {
+		return err
+	}
+
+	counters, err := s.GetCounters()
+	if err != nil {
+		return err
+	}
+
+	gaugeMap := make(map[string]float64)
+	for _, g := range gauges {
+		gaugeMap[g.Name] = g.Value
+	}
+
+	counterMap := make(map[string]int64)
+	for _, c := range counters {
+		counterMap[c.Name] = c.Value
+	}
+
+	data := FileData{
+		Gauge:   gaugeMap,
+		Counter: counterMap,
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	return encoder.Encode(data)
+}
+
+func (s *DBStorage) LoadFromFile(path string) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	var data FileData
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&data); err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	for k, v := range data.Gauge {
+		sql := "INSERT INTO GAUGES (NAME, VALUE) VALUES ($1, $2) ON CONFLICT (NAME) DO UPDATE SET VALUE = EXCLUDED.VALUE;"
+		_, err := s.Pool.Exec(ctx, sql, k, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	for k, v := range data.Counter {
+		sql := "INSERT INTO COUNTERS (NAME, VALUE) VALUES ($1, $2) ON CONFLICT (NAME) DO UPDATE SET VALUE = EXCLUDED.VALUE;"
+		_, err := s.Pool.Exec(ctx, sql, k, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func NewDBStorage(connString string) (*DBStorage, error) {

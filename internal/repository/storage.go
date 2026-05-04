@@ -12,6 +12,6 @@ type Storage interface {
 	GetGauges() (val []models.GaugeModel, err error)
 	GetCounters() (val []models.CounterModel, err error)
 	Ping() error
-	//SaveToFile(path string) error
-	//LoadFromFile(path string) error
+	SaveToFile(path string) error
+	LoadFromFile(path string) error
 }
