@@ -9,9 +9,11 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/isBlueTip/metrics/internal/logger"
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/isBlueTip/metrics/internal/repository"
 	"github.com/isBlueTip/metrics/internal/service"
+	"go.uber.org/zap"
 )
 
 const htmlTmpl = `
@@ -35,8 +37,18 @@ type Data struct {
 func GetAll(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
 		var buf []string
-		gauges := service.GetGauges(s)
-		counters := service.GetCounters(s)
+		gauges, err := service.GetGauges(s)
+		if err != nil {
+			logger.Log.Error("gauges retrieving error", zap.String("gauges", err.Error()))
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		counters, err := service.GetCounters(s)
+		if err != nil {
+			logger.Log.Error("counters retrieving error", zap.String("counters", err.Error()))
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		for _, g := range gauges {
 			str := fmt.Sprintf("%s: %.2f<br>", g.Name, g.Value)
@@ -112,7 +124,7 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 		decoder := json.NewDecoder(body)
 		defer req.Body.Close()
 
-		var metrics models.Metrics
+		var metrics models.Update
 		err = decoder.Decode(&metrics)
 		if err != nil {
 			http.Error(res, err.Error(), http.StatusBadRequest)
@@ -148,5 +160,14 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	}
+}
+
+func Ping(s repository.Storage) http.HandlerFunc {
+	return func(res http.ResponseWriter, req *http.Request) {
+		if err := service.Ping(s); err != nil {
+			http.Error(res, err.Error(), http.StatusInternalServerError)
+		}
+		res.WriteHeader(http.StatusOK)
 	}
 }
