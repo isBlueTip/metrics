@@ -16,7 +16,7 @@ import (
 )
 
 func TestUpdate(t *testing.T) {
-	storage := repository.NewStorage()
+	storage := repository.NewMemStorage()
 	type args struct {
 		url    string
 		method string
