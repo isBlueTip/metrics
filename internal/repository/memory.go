@@ -117,16 +117,19 @@ func (s *MemStorage) LoadFromFile(path string) error {
 }
 
 func (s *MemStorage) UpdateBatch(metrics []models.Update) error {
-	var err error
-	for _, metric := range metrics {
-		if metric.MType == models.Gauge {
-			err = s.SetGauge(metric.ID, *metric.Value)
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-		} else if metric.MType == models.Counter {
-			err = s.SetCounter(metric.ID, *metric.Delta)
-		}
-		if err != nil {
-			return err
+	for _, m := range metrics {
+		switch m.MType {
+		case models.Gauge:
+			if m.Value != nil {
+				s.gauge[m.ID] = *m.Value
+			}
+		case models.Counter:
+			if m.Delta != nil {
+				s.counter[m.ID] += *m.Delta
+			}
 		}
 	}
 	return nil

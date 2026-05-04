@@ -57,6 +57,7 @@ func (s *FileStorage) GetGauges() (res []models.GaugeModel, err error) {
 		record := models.GaugeModel{Name: n, Value: v}
 		res = append(res, record)
 	}
+
 	return
 }
 
@@ -68,6 +69,7 @@ func (s *FileStorage) GetCounters() (res []models.CounterModel, err error) {
 		record := models.CounterModel{Name: n, Value: v}
 		res = append(res, record)
 	}
+
 	return
 }
 
@@ -121,16 +123,19 @@ func (s *FileStorage) LoadFromFile(path string) error {
 }
 
 func (s *FileStorage) UpdateBatch(metrics []models.Update) error {
-	var err error
-	for _, metric := range metrics {
-		if metric.MType == models.Gauge {
-			err = s.SetGauge(metric.ID, *metric.Value)
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-		} else if metric.MType == models.Counter {
-			err = s.SetCounter(metric.ID, *metric.Delta)
-		}
-		if err != nil {
-			return err
+	for _, m := range metrics {
+		switch m.MType {
+		case models.Gauge:
+			if m.Value != nil {
+				s.gauge[m.ID] = *m.Value
+			}
+		case models.Counter:
+			if m.Delta != nil {
+				s.counter[m.ID] += *m.Delta
+			}
 		}
 	}
 	return nil

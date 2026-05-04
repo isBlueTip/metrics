@@ -120,6 +120,7 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 		encoder := json.NewEncoder(res)
 		err = encoder.Encode(&metric)
 		if err != nil {
+			logger.Log.Error("server error", zap.String("update", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -139,9 +140,10 @@ func UpdateBatch(storage repository.Storage) http.HandlerFunc {
 		decoder := json.NewDecoder(body)
 		defer req.Body.Close()
 
-		metrics := make([]models.Update, 0, 0)
+		metrics := make([]models.Update, 0)
 		_, err = decoder.Token()
 		if err != nil {
+			logger.Log.Error("updating error", zap.String("handler", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -150,7 +152,7 @@ func UpdateBatch(storage repository.Storage) http.HandlerFunc {
 			var metric models.Update
 
 			if err = decoder.Decode(&metric); err != nil {
-				logger.Log.Error(err.Error())
+				logger.Log.Error("updating error", zap.String("handler", err.Error()))
 				http.Error(res, err.Error(), http.StatusInternalServerError)
 				return
 			}
@@ -175,12 +177,14 @@ func UpdateBatch(storage repository.Storage) http.HandlerFunc {
 
 		_, err = decoder.Token()
 		if err != nil {
+			logger.Log.Error("updating error", zap.String("handler", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		err = service.UpdateBatch(storage, metrics)
 		if err != nil {
+			logger.Log.Error("updating error", zap.String("handler", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}
@@ -188,6 +192,7 @@ func UpdateBatch(storage repository.Storage) http.HandlerFunc {
 		encoder := json.NewEncoder(res)
 		err = encoder.Encode(&metrics)
 		if err != nil {
+			logger.Log.Error("updating error", zap.String("handler", err.Error()))
 			http.Error(res, err.Error(), http.StatusInternalServerError)
 			return
 		}

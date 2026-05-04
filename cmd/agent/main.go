@@ -35,7 +35,8 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 			metric.Collect()
 			log.Printf("metricSet collected: %+v\n", *metric)
 		case <-reportTicker:
-			err := sender.SendJSON(metric)
+			//err := sender.SendJSON(metric)
+			err := sender.SendBatch(metric)
 			if err != nil {
 				log.Printf("non-critical error: %s\n", err)
 			}

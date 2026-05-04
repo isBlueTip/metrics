@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"time"
 
@@ -213,47 +214,46 @@ func (s *DBStorage) LoadFromFile(path string) error {
 }
 
 func (s *DBStorage) UpdateBatch(metrics []models.Update) error {
-	ctx := context.Background()
+	var err error
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
 
-	tx, err := s.Pool.BeginTx(ctx, pgx.TxOptions{})
+	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx)
 
-	sqlGauge := "INSERT INTO GAUGES (NAME, VALUE) " +
-		"VALUES (@name, @value) " +
-		"ON CONFLICT (NAME) DO UPDATE " +
-		"SET " +
-		"VALUE = EXCLUDED.VALUE;"
-
-	//stmtGauge, err := tx.Prepare(ctx, "upsert_gauge", sqlGauge)
-	//if err != nil {
-	//	return err
-	//}
-
-	sqlCounter := "INSERT INTO COUNTERS (NAME, VALUE) " +
-		"VALUES (@name, @value) " +
-		"ON CONFLICT (NAME) DO UPDATE " +
-		"SET " +
-		"VALUE = EXCLUDED.VALUE;"
-
-	//stmtCounter, err := tx.Prepare(ctx, "upsert_counter", sqlCounter)
-	//if err != nil {
-	//	return err
-	//}
-
-	for _, metric := range metrics {
-		if metric.MType == models.Gauge {
-			_, err = tx.Exec(ctx, sqlGauge, pgx.NamedArgs{"name": metric.ID, "value": *metric.Value})
-
-		} else if metric.MType == models.Counter {
-			_, err = tx.Exec(ctx, sqlCounter, pgx.NamedArgs{"name": metric.ID, "value": *metric.Delta})
-		}
-		if err != nil {
-			tx.Rollback(ctx)
-			return err
+	for _, m := range metrics {
+		switch m.MType {
+		case models.Gauge:
+			if m.Value != nil {
+				sql := "INSERT INTO GAUGES (NAME, VALUE) " +
+					"VALUES (@name, @value) " +
+					"ON CONFLICT (NAME) DO UPDATE " +
+					"SET " +
+					"VALUE = EXCLUDED.VALUE;"
+				_, err = tx.Exec(ctx, sql, pgx.NamedArgs{"name": m.ID, "value": *m.Value})
+				if err != nil {
+					return err
+				}
+			}
+		case models.Counter:
+			log.Printf("metric: %+v\n", m)
+			if m.Delta != nil {
+				sql := "INSERT INTO COUNTERS (NAME, VALUE) " +
+					"VALUES (@name, @value) " +
+					"ON CONFLICT (NAME) DO UPDATE " +
+					"SET " +
+					"VALUE = COUNTERS.VALUE + EXCLUDED.VALUE;"
+				_, err = tx.Exec(ctx, sql, pgx.NamedArgs{"name": m.ID, "value": *m.Delta})
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
+
 	return tx.Commit(ctx)
 }
 
