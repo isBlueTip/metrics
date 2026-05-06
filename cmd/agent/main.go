@@ -19,6 +19,14 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 
 	client := pester.New()
 	client.Timeout = 20 * time.Second
+	client.MaxRetries = 3
+	client.Backoff = func(retry int) time.Duration {
+		intervals := []time.Duration{time.Second, 3 * time.Second, 5 * time.Second}
+		if retry < len(intervals) {
+			return intervals[retry]
+		}
+		return intervals[len(intervals)-1]
+	}
 
 	sender := &agent.Sender{
 		HC:   client,
@@ -35,7 +43,8 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 			metric.Collect()
 			log.Printf("metricSet collected: %+v\n", *metric)
 		case <-reportTicker:
-			err := sender.SendJSON(metric)
+			//err := sender.SendJSON(metric)
+			err := sender.SendBatch(metric)
 			if err != nil {
 				log.Printf("non-critical error: %s\n", err)
 			}
