@@ -113,6 +113,13 @@ func GetByNameURL(s repository.Storage) http.HandlerFunc {
 
 func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Log.Error("panic in GetByNameJSON", zap.Any("error", r))
+				http.Error(res, fmt.Sprintf("internal error: %v", r), http.StatusInternalServerError)
+			}
+		}()
+
 		res.Header().Set("Content-Type", "application/json")
 
 		body, err := getReader(req)
@@ -120,7 +127,6 @@ func GetByNameJSON(s repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer body.Close()
 
 		decoder := json.NewDecoder(body)
 

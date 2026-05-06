@@ -64,6 +64,13 @@ func UpdateURL(storage repository.Storage) http.HandlerFunc {
 
 func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Log.Error("panic in UpdateJSON", zap.Any("error", r))
+				http.Error(res, fmt.Sprintf("internal error: %v", r), http.StatusInternalServerError)
+			}
+		}()
+
 		res.Header().Set("Content-Type", "application/json")
 
 		body, err := getReader(req)
@@ -71,7 +78,6 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer body.Close()
 
 		decoder := json.NewDecoder(body)
 		var metric models.Update
@@ -128,14 +134,21 @@ func UpdateJSON(storage repository.Storage) http.HandlerFunc {
 
 func UpdateBatch(storage repository.Storage) http.HandlerFunc {
 	return func(res http.ResponseWriter, req *http.Request) {
+		defer func() {
+			if r := recover(); r != nil {
+				logger.Log.Error("panic in UpdateBatch", zap.Any("error", r))
+				http.Error(res, fmt.Sprintf("internal error: %v", r), http.StatusInternalServerError)
+			}
+		}()
+
 		res.Header().Set("Content-Type", "application/json")
 
 		body, err := getReader(req)
 		if err != nil {
+			logger.Log.Error("getReader error", zap.String("handler", err.Error()))
 			http.Error(res, err.Error(), http.StatusBadRequest)
 			return
 		}
-		defer body.Close()
 
 		decoder := json.NewDecoder(body)
 
