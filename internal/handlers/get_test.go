@@ -32,7 +32,7 @@ func TestGetAll(t *testing.T) {
 		{
 			name: "1 positive",
 			args: args{
-				s:      repository.NewStorage(),
+				s:      repository.NewMemStorage(),
 				method: http.MethodGet,
 			},
 			setup: func(s repository.Storage) {
@@ -103,7 +103,7 @@ func TestGetByNameURL(t *testing.T) {
 		{
 			name: "1 positive",
 			args: args{
-				s:      repository.NewStorage(),
+				s:      repository.NewMemStorage(),
 				url:    "/value/gauge/metric1",
 				method: http.MethodGet,
 			},
@@ -119,7 +119,7 @@ func TestGetByNameURL(t *testing.T) {
 		{
 			name: "2 positive",
 			args: args{
-				s:      repository.NewStorage(),
+				s:      repository.NewMemStorage(),
 				url:    "/value/gauge/metric1",
 				method: http.MethodGet,
 			},
@@ -132,7 +132,7 @@ func TestGetByNameURL(t *testing.T) {
 		{
 			name: "3 positive",
 			args: args{
-				s:      repository.NewStorage(),
+				s:      repository.NewMemStorage(),
 				url:    "/value/counter/metric1",
 				method: http.MethodGet,
 			},
@@ -148,7 +148,7 @@ func TestGetByNameURL(t *testing.T) {
 		{
 			name: "4 positive",
 			args: args{
-				s:      repository.NewStorage(),
+				s:      repository.NewMemStorage(),
 				url:    "/value/counter/metric1",
 				method: http.MethodGet,
 			},
@@ -161,7 +161,7 @@ func TestGetByNameURL(t *testing.T) {
 		{
 			name: "5 positive",
 			args: args{
-				s:      repository.NewStorage(),
+				s:      repository.NewMemStorage(),
 				url:    "/value/unknown/metric1",
 				method: http.MethodGet,
 			},

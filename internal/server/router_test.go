@@ -28,7 +28,7 @@ func TestRouter_Gauge(t *testing.T) {
 		{
 			name: "1 positive",
 			args: args{
-				storage:    repository.NewStorage(),
+				storage:    repository.NewMemStorage(),
 				path:       "/update/" + models.Gauge + "/metric_1" + "/101.1",
 				metricName: "metric_1",
 			},
@@ -40,7 +40,7 @@ func TestRouter_Gauge(t *testing.T) {
 		{
 			name: "2 negative",
 			args: args{
-				storage:    repository.NewStorage(),
+				storage:    repository.NewMemStorage(),
 				path:       "/update/" + "invalidType" + "/metric_1" + "/101.1",
 				metricName: "metric_1",
 			},
@@ -51,7 +51,7 @@ func TestRouter_Gauge(t *testing.T) {
 		{
 			name: "3 negative",
 			args: args{
-				storage:    repository.NewStorage(),
+				storage:    repository.NewMemStorage(),
 				path:       "/delete",
 				metricName: "metric_1",
 			},
@@ -63,7 +63,7 @@ func TestRouter_Gauge(t *testing.T) {
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			r := Router(tt.args.storage)
+			r := Router(tt.args.storage, "", "")
 
 			req := httptest.NewRequest(http.MethodPost, tt.args.path, nil)
 			w := httptest.NewRecorder()
@@ -98,7 +98,7 @@ func TestRouter_Counter(t *testing.T) {
 		{
 			name: "1 positive",
 			args: args{
-				storage:    repository.NewStorage(),
+				storage:    repository.NewMemStorage(),
 				path:       "/update/" + models.Counter + "/metric_1" + "/101",
 				metricName: "metric_1",
 			},
@@ -110,7 +110,7 @@ func TestRouter_Counter(t *testing.T) {
 		{
 			name: "2 negative",
 			args: args{
-				storage:    repository.NewStorage(),
+				storage:    repository.NewMemStorage(),
 				path:       "/update" + "/invalidType" + "/metric_1" + "/101",
 				metricName: "metric_1",
 			},
@@ -121,7 +121,7 @@ func TestRouter_Counter(t *testing.T) {
 		{
 			name: "3 negative",
 			args: args{
-				storage:    repository.NewStorage(),
+				storage:    repository.NewMemStorage(),
 				path:       "/delete",
 				metricName: "metric_1",
 			},
@@ -132,7 +132,7 @@ func TestRouter_Counter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Router(tt.args.storage)
+			r := Router(tt.args.storage, "", "")
 
 			req := httptest.NewRequest(http.MethodPost, tt.args.path, nil)
 			w := httptest.NewRecorder()

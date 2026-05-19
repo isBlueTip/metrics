@@ -9,6 +9,7 @@ type Config struct {
 	Address        *string `env:"ADDRESS"`
 	ReportInterval *uint   `env:"REPORT_INTERVAL"`
 	PollInterval   *uint   `env:"POLL_INTERVAL"`
+	Key            *string `env:"KEY"`
 }
 
 type ServerAddress struct {
