@@ -11,7 +11,7 @@ import (
 	"github.com/sethgrid/pester"
 )
 
-func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval time.Duration) error {
+func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval time.Duration, key string) error {
 	metric := &agent.MetricSet{
 		Uints:  make(map[string]uint64),
 		Floats: make(map[string]float64),
@@ -31,6 +31,7 @@ func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval ti
 	sender := &agent.Sender{
 		HC:   client,
 		Addr: net.JoinHostPort(serverAddr.Host, serverAddr.Port),
+		Key:  key,
 	}
 
 	// NOTE to reviewer: Since Go 1.23, time.Tick is safe to use and garbage collected.
@@ -60,10 +61,12 @@ func main() {
 
 	var pollSeconds uint
 	var reportSeconds uint
+	key := ""
 
 	flag.Var(&serverAddr, "a", "Server address")
 	flag.UintVar(&pollSeconds, "p", 2, "Polling interval in seconds")
 	flag.UintVar(&reportSeconds, "r", 10, "Reporting interval in seconds")
+	flag.StringVar(&key, "k", "", "Key for SHA256 hash")
 
 	flag.Parse()
 
@@ -84,11 +87,14 @@ func main() {
 	if cfg.ReportInterval != nil {
 		reportSeconds = *cfg.ReportInterval
 	}
+	if cfg.Key != nil {
+		key = *cfg.Key
+	}
 
 	pollInterval := time.Duration(pollSeconds) * time.Second
 	reportInterval := time.Duration(reportSeconds) * time.Second
 
-	if err := run(serverAddr, pollInterval, reportInterval); err != nil {
+	if err := run(serverAddr, pollInterval, reportInterval, key); err != nil {
 		log.Println(err.Error())
 	}
 }

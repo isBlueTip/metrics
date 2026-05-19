@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/isBlueTip/metrics/internal/hash"
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/sethgrid/pester"
 )
@@ -17,6 +18,7 @@ import (
 type Sender struct {
 	HC   *pester.Client
 	Addr string
+	Key  string
 }
 
 func (s *Sender) Send(metricSet *MetricSet) error {
@@ -195,6 +197,10 @@ func (s *Sender) executeRequestJSON(u *url.URL, metric models.Update) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
+	if s.Key != "" {
+		h := hash.Compute(buf.Bytes(), s.Key)
+		req.Header.Set("HashSHA256", h)
+	}
 
 	resp, err := s.HC.Do(req)
 	if err != nil {
@@ -302,6 +308,10 @@ func (s *Sender) executeRequestBatch(metrics []models.Update) error {
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Content-Encoding", "gzip")
+	if s.Key != "" {
+		h := hash.Compute(buf.Bytes(), s.Key)
+		req.Header.Set("HashSHA256", h)
+	}
 
 	resp, err := s.HC.Do(req)
 	if err != nil {

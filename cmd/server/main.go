@@ -57,7 +57,7 @@ func run(address *ServerAddress, storeCfg StoreConfig) error {
 		}
 	}
 
-	mux := server.Router(storage, storeCfg.DB)
+	mux := server.Router(storage, storeCfg.DB, storeCfg.Key)
 
 	addrString := net.JoinHostPort(address.Host, address.Port)
 
@@ -109,6 +109,7 @@ func main() {
 	fileStoragePath := flag.String("f", DefaultFileStoragePath, "File storage path")
 	restore := flag.Bool("r", DefaultRestore, "Restore metrics on startup")
 	dbString := flag.String("d", "", "DB connection string")
+	key := flag.String("k", "", "Key for SHA256 hash")
 
 	flag.Parse()
 
@@ -158,6 +159,12 @@ func main() {
 		storeCfg.DB = *envCfg.DB
 	} else {
 		storeCfg.DB = *dbString
+	}
+
+	if envCfg.Key != nil {
+		storeCfg.Key = *envCfg.Key
+	} else {
+		storeCfg.Key = *key
 	}
 
 	if err := run(&addr, storeCfg); err != nil {

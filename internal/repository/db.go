@@ -334,7 +334,7 @@ func (s *DBStorage) initTables(ctx context.Context) error {
 
 	countersSQL := `CREATE TABLE IF NOT EXISTS counters(` +
 		`"name" TEXT PRIMARY KEY,` +
-		`"value" INTEGER);`
+		`"value" BIGINT);`
 
 	_, err = s.Pool.Exec(ctx, countersSQL)
 

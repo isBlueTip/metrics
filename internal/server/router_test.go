@@ -63,7 +63,7 @@ func TestRouter_Gauge(t *testing.T) {
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			r := Router(tt.args.storage, "")
+			r := Router(tt.args.storage, "", "")
 
 			req := httptest.NewRequest(http.MethodPost, tt.args.path, nil)
 			w := httptest.NewRecorder()
@@ -132,7 +132,7 @@ func TestRouter_Counter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := Router(tt.args.storage, "")
+			r := Router(tt.args.storage, "", "")
 
 			req := httptest.NewRequest(http.MethodPost, tt.args.path, nil)
 			w := httptest.NewRecorder()

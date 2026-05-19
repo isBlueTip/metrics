@@ -12,6 +12,7 @@ type EnvConfig struct {
 	FileStorePath *string `env:"FILE_STORAGE_PATH"`
 	Restore       *bool   `env:"RESTORE"`
 	DB            *string `env:"DATABASE_DSN"`
+	Key           *string `env:"KEY"`
 }
 
 type StoreConfig struct {
@@ -19,6 +20,7 @@ type StoreConfig struct {
 	FilePath string
 	Restore  bool
 	DB       string
+	Key      string
 }
 
 type ServerAddress struct {
