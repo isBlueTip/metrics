@@ -10,6 +10,7 @@ type Config struct {
 	ReportInterval *uint   `env:"REPORT_INTERVAL"`
 	PollInterval   *uint   `env:"POLL_INTERVAL"`
 	Key            *string `env:"KEY"`
+	Rate           *int    `env:"RATE_LIMIT"`
 }
 
 type ServerAddress struct {

@@ -1,4 +1,4 @@
-package agent
+package sender
 
 import (
 	"net/http"
@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/isBlueTip/metrics/internal/agent"
 	"github.com/isBlueTip/metrics/internal/models"
 	"github.com/sethgrid/pester"
 )
@@ -29,7 +30,7 @@ func TestSender_Send(t *testing.T) {
 		Addr string
 	}
 	type args struct {
-		metricSet *MetricSet
+		metricSet *agent.MetricSet
 	}
 	tests := []struct {
 		name    string
@@ -44,7 +45,7 @@ func TestSender_Send(t *testing.T) {
 				Addr: server.URL,
 			},
 			args: args{
-				metricSet: &MetricSet{
+				metricSet: &agent.MetricSet{
 					Uints:  make(map[string]uint64),
 					Floats: make(map[string]float64),
 				},

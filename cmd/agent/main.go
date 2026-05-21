@@ -8,51 +8,15 @@ import (
 
 	"github.com/caarlos0/env/v6"
 	"github.com/isBlueTip/metrics/internal/agent"
+	"github.com/isBlueTip/metrics/internal/agent/sender"
 	"github.com/sethgrid/pester"
 )
 
-func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval time.Duration, key string) error {
-	metric := &agent.MetricSet{
-		Uints:  make(map[string]uint64),
-		Floats: make(map[string]float64),
-	}
-
-	client := pester.New()
-	client.Timeout = 20 * time.Second
-	client.MaxRetries = 3
-	client.Backoff = func(retry int) time.Duration {
-		intervals := []time.Duration{time.Second, 3 * time.Second, 5 * time.Second}
-		if retry < len(intervals) {
-			return intervals[retry]
-		}
-		return intervals[len(intervals)-1]
-	}
-
-	sender := &agent.Sender{
-		HC:   client,
-		Addr: net.JoinHostPort(serverAddr.Host, serverAddr.Port),
-		Key:  key,
-	}
-
-	// NOTE to reviewer: Since Go 1.23, time.Tick is safe to use and garbage collected.
-	pollTicker := time.Tick(pollInterval)
-	reportTicker := time.Tick(reportInterval)
-
-	for {
-		select {
-		case <-pollTicker:
-			metric.Collect()
-			log.Printf("metricSet collected: %+v\n", *metric)
-		case <-reportTicker:
-			//err := sender.SendJSON(metric)
-			err := sender.SendBatch(metric)
-			if err != nil {
-				log.Printf("non-critical error: %s\n", err)
-			}
-			log.Println("metric sent")
-		}
-	}
-}
+const (
+	DefaultPollSeconds   = 2
+	DefaultReportSeconds = 10
+	DefaultRateLimit     = 3
+)
 
 func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
@@ -61,12 +25,16 @@ func main() {
 
 	var pollSeconds uint
 	var reportSeconds uint
-	key := ""
+	//key := ""
+	var key string
+	var rateLimit int
 
 	flag.Var(&serverAddr, "a", "Server address")
-	flag.UintVar(&pollSeconds, "p", 2, "Polling interval in seconds")
-	flag.UintVar(&reportSeconds, "r", 10, "Reporting interval in seconds")
+	flag.UintVar(&pollSeconds, "p", DefaultPollSeconds, "Polling interval in seconds")
+	flag.UintVar(&reportSeconds, "r", DefaultReportSeconds, "Reporting interval in seconds")
 	flag.StringVar(&key, "k", "", "Key for SHA256 hash")
+	flag.IntVar(&rateLimit, "l", DefaultRateLimit, "Num of workers to collect metrics")
+	//rateLimit := flag.Int("l", DefaultRateLimit, "Num of workers to collect metrics")
 
 	flag.Parse()
 
@@ -90,6 +58,9 @@ func main() {
 	if cfg.Key != nil {
 		key = *cfg.Key
 	}
+	if cfg.Rate != nil {
+		rateLimit = *cfg.Rate
+	}
 
 	pollInterval := time.Duration(pollSeconds) * time.Second
 	reportInterval := time.Duration(reportSeconds) * time.Second
@@ -97,4 +68,51 @@ func main() {
 	if err := run(serverAddr, pollInterval, reportInterval, key); err != nil {
 		log.Println(err.Error())
 	}
+}
+
+func run(serverAddr ServerAddress, pollInterval time.Duration, reportInterval time.Duration, key string) error {
+	metric := &agent.MetricSet{
+		Uints:  make(map[string]uint64),
+		Floats: make(map[string]float64),
+	}
+
+	s := &sender.Sender{
+		HC:   newClient(),
+		Addr: net.JoinHostPort(serverAddr.Host, serverAddr.Port),
+		Key:  key,
+	}
+
+	// NOTE to reviewer: Since Go 1.23, time.Tick is safe to use and garbage collected.
+	pollTicker := time.Tick(pollInterval)
+	reportTicker := time.Tick(reportInterval)
+
+	for {
+		select {
+		case <-pollTicker:
+			metric.Collect()
+			log.Printf("metricSet collected: %+v\n", *metric)
+		case <-reportTicker:
+			//err := s.SendJSON(metric)
+			err := s.SendBatch(metric)
+			if err != nil {
+				log.Printf("non-critical error: %s\n", err)
+			}
+			log.Println("metric sent")
+		}
+	}
+}
+
+func newClient() *pester.Client {
+	client := pester.New()
+	client.Timeout = 20 * time.Second
+	client.MaxRetries = 3
+	client.Backoff = func(retry int) time.Duration {
+		intervals := []time.Duration{time.Second, 3 * time.Second, 5 * time.Second}
+		if retry < len(intervals) {
+			return intervals[retry]
+		}
+		return intervals[len(intervals)-1]
+	}
+
+	return client
 }
