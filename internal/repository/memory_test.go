@@ -237,6 +237,7 @@ func TestMemStorage_GetGauges(t *testing.T) {
 		name    string
 		fields  fields
 		wantRes []models.GaugeModel
+		wantErr bool
 	}{
 		{
 			name: "1 positive",
@@ -250,6 +251,7 @@ func TestMemStorage_GetGauges(t *testing.T) {
 				{Name: "metric_1", Value: 64.6},
 				{Name: "metric_2", Value: 5933.6515616},
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -258,7 +260,10 @@ func TestMemStorage_GetGauges(t *testing.T) {
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
 			}
-			gotRes := s.GetGauges()
+			gotRes, err := s.GetGauges()
+			if tt.wantErr {
+				require.Error(t, err, "MemStorage.GetGauges() err: %v, wantErr %t", err, tt.wantErr)
+			}
 			assert.ElementsMatch(t, gotRes, tt.wantRes, "MemStorage.GetGauges() = %v, want %v", gotRes, tt.wantRes)
 		})
 	}
@@ -273,6 +278,7 @@ func TestMemStorage_GetCounters(t *testing.T) {
 		name    string
 		fields  fields
 		wantRes []models.CounterModel
+		wantErr bool
 	}{
 		{
 			name: "1 positive",
@@ -286,6 +292,7 @@ func TestMemStorage_GetCounters(t *testing.T) {
 				{Name: "metric_3", Value: 18},
 				{Name: "metric_4", Value: 5165151},
 			},
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -294,18 +301,21 @@ func TestMemStorage_GetCounters(t *testing.T) {
 				gauge:   tt.fields.gauge,
 				counter: tt.fields.counter,
 			}
-			gotRes := s.GetCounters()
+			gotRes, err := s.GetCounters()
+			if tt.wantErr {
+				require.Error(t, err, "MemStorage.GetCounters() err: %v, wantErr %t", err, tt.wantErr)
+			}
 			assert.ElementsMatch(t, gotRes, tt.wantRes, "MemStorage.GetCounters() = %v, want %v", gotRes, tt.wantRes)
 		})
 	}
 }
 
-func TestNewStorage(t *testing.T) {
+func TestNewMemStorage(t *testing.T) {
 	want := &MemStorage{
 		gauge:   make(map[string]float64),
 		counter: make(map[string]int64),
 	}
-	got := NewStorage()
+	got := NewMemStorage()
 	require.EqualValuesf(t, got, want, "NewStorage() = %v, want %v", got, want)
 
 }
